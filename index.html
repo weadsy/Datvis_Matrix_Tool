@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Drag Demo</title>
+  <!-- Tailwind via CDN -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css"
+    rel="stylesheet"
+  />
+</head>
+<body class="bg-gray-100">
+  <div class="max-w-4xl mx-auto py-16">
+    <h1 class="text-3xl font-bold mb-8 text-center">Drag & Drop Demo</h1>
+    <div class="flex flex-wrap gap-4 p-8 bg-white rounded-xl shadow-lg">
+      <div class="square bg-blue-500 w-24 h-24 rounded-lg shadow cursor-move"></div>
+      <div class="square bg-green-500 w-24 h-24 rounded-lg shadow cursor-move"></div>
+      <div class="square bg-red-500 w-24 h-24 rounded-lg shadow cursor-move"></div>
+    </div>
+  </div>
+
+  <!-- Interact.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/interactjs@3.0.4/dist/interact.min.js"></script>
+  <script>
+    function dragMoveListener (event) {
+      const t = event.target;
+      const x = (parseFloat(t.dataset.x) || 0) + event.dx;
+      const y = (parseFloat(t.dataset.y) || 0) + event.dy;
+      t.style.transform = `translate(${x}px, ${y}px)`;
+      t.dataset.x = x;
+      t.dataset.y = y;
+    }
+
+    interact('.square').draggable({
+      listeners: { move: dragMoveListener },
+      inertia: true,
+      modifiers: [
+        interact.modifiers.restrict({
+          restriction: 'parent',
+          endOnly: true
+        })
+      ]
+    });
+  </script>
+</body>
+</html>
