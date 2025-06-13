@@ -1,46 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Drag Demo</title>
-  <!-- Tailwind via CDN -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css"
-    rel="stylesheet"
-  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Draggable Squares</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.11/dist/interact.min.js"></script>
 </head>
-<body class="bg-gray-100">
-  <div class="max-w-4xl mx-auto py-16">
-    <h1 class="text-3xl font-bold mb-8 text-center">Drag & Drop Demo</h1>
-    <div class="flex flex-wrap gap-4 p-8 bg-white rounded-xl shadow-lg">
-      <div class="square bg-blue-500 w-24 h-24 rounded-lg shadow cursor-move"></div>
-      <div class="square bg-green-500 w-24 h-24 rounded-lg shadow cursor-move"></div>
-      <div class="square bg-red-500 w-24 h-24 rounded-lg shadow cursor-move"></div>
+<body class="bg-gray-100 min-h-screen p-8">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-8">Drag & Drop Squares</h1>
+    <div id="container" class="grid grid-cols-3 gap-4 min-h-[60vh] p-4 bg-white rounded-lg shadow-lg">
+      <!-- Squares will be added via JavaScript -->
     </div>
   </div>
-
-  <!-- Interact.js via CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/interactjs@3.0.4/dist/interact.min.js"></script>
   <script>
-    function dragMoveListener (event) {
-      const t = event.target;
-      const x = (parseFloat(t.dataset.x) || 0) + event.dx;
-      const y = (parseFloat(t.dataset.y) || 0) + event.dy;
-      t.style.transform = `translate(${x}px, ${y}px)`;
-      t.dataset.x = x;
-      t.dataset.y = y;
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const container = document.getElementById('container');
+      const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-yellow-500', 'bg-red-500'];
 
-    interact('.square').draggable({
-      listeners: { move: dragMoveListener },
-      inertia: true,
-      modifiers: [
-        interact.modifiers.restrict({
-          restriction: 'parent',
-          endOnly: true
-        })
-      ]
+      colors.forEach((color, index) => {
+        const square = document.createElement('div');
+        square.className = `${color} w-32 h-32 rounded-lg shadow-lg cursor-move flex items-center justify-center text-white font-bold text-xl`;
+        square.textContent = `Box ${index + 1}`;
+        container.appendChild(square);
+      });
+
+      interact('.cursor-move').draggable({
+        inertia: true,
+        modifiers: [
+          interact.modifiers.restrictRect({
+            restriction: 'parent',
+            endOnly: true
+          })
+        ],
+        listeners: {
+          start(event) {
+            gsap.to(event.target, { scale: 1.1, duration: 0.2 });
+          },
+          move(event) {
+            const target = event.target;
+            const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+            const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+            target.style.transform = `translate(${x}px, ${y}px)`;
+            target.setAttribute('data-x', x);
+            target.setAttribute('data-y', y);
+          },
+          end(event) {
+            gsap.to(event.target, { 
+              scale: 1, 
+              duration: 0.3,
+              ease: 'elastic.out(1, 0.5)' 
+            });
+          }
+        }
+      });
     });
   </script>
 </body>
