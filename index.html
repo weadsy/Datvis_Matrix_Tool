@@ -54,6 +54,12 @@
             outline-offset: 2px;
         }
 
+        /* highlight locked boxes */
+        .box.locked {
+            outline: 2px solid rgb(255, 3, 74);
+            outline-offset: 2px;
+        }
+
         /* selection rectangle */
         .select-rect {
             position: absolute;
@@ -238,6 +244,9 @@ overflow-visible">
                             .forEach(el => el.remove());
                     }
                 });
+                // 1) clear any prior inSelection flags
+                container.querySelectorAll('.box.inSelection')
+                    .forEach(el => el.classList.remove('inSelection'));
 
 
             }
@@ -308,6 +317,7 @@ overflow-visible">
                 if (e.button !== 0 || e.target !== container) return;
 
                 isSelecting = true;
+                console.log('iselecting:', isSelecting);
                 const crect = container.getBoundingClientRect();
 
                 // ↓ Adjust start to container‐local, unscaled coords
@@ -395,9 +405,19 @@ overflow-visible">
                 ],
                 onstart(event) {
                     const t = event.target;
-                    if (!t.classList.contains('selected')) {
+
+                    let one = false;
+                    let lockDrag = false;
+                    if (!t.classList.contains('selected') && !t.classList.contains('locked')) {
                         clearSelection();
                         t.classList.add('selected');
+                        one = true;
+                    }
+
+                    if (t.classList.contains('locked')) {
+                        clearSelection();
+                        //t.classList.add('selected');
+                        lockDrag = true;
                     }
 
 
@@ -408,10 +428,12 @@ overflow-visible">
                     );
 
                     console.log('rectSel length:', rectSel.length);
+                    //let noSelect = false;
                     if (rectSel.length == 0) {
                         rectSel = Array.from(
                             container.querySelectorAll('.box.selected')
                         );
+                        //noSelect = true;
                     }
 
                     // 2) Split that into locked vs unlocked:
@@ -420,16 +442,33 @@ overflow-visible">
 
                     // 3) Decide which group to actually drag:
                     let toDrag;
-                    if (locked.length === rectSel.length) {
+                    console.log('unlock length:', unlocked.length);
+                    console.log('one:', one);
+                    /* if (noSelect && (unlocked.length == 1)) {
+                        toDrag = unlocked;
+                        console.log('active');
+                    } */
+                    if (one) {
+                        toDrag = unlocked;
+                        console.log('one active');
+                    }
+                    else if (lockDrag) {
+                        toDrag = locked;
+                        console.log('lockdrag active');
+                    }
+                    else if (locked.length === rectSel.length) {
                         // you dragged *only* locked boxes
                         toDrag = locked;
+                        console.log('locked active');
                     }
                     else if (unlocked.length === rectSel.length) {
                         // you dragged *only* unlocked (freshly selected) boxes
+                        console.log('unlocked active');
                         toDrag = unlocked;
                     }
                     else {
                         // mixed → drag everything you hit
+                        console.log('mixed/all active');
                         toDrag = rectSel;
                     }
 
@@ -475,8 +514,8 @@ overflow-visible">
                     } */
 
                     delta = { x: 0, y: 0 };
-                    //groupDrag = selectedEls.length > 1;
-                    groupDrag = true;
+                    groupDrag = selectedEls.length > 1;
+                    //groupDrag = true;
                 },
                 onmove(event) {
                     const dx = event.dx / zoomLevel, dy = event.dy / zoomLevel;
@@ -530,7 +569,7 @@ overflow-visible">
 
             groupBtn.addEventListener('click', () => {
                 // find all selected boxes
-                const selected = Array.from(container.querySelectorAll('.box.selected'));
+                const selected = Array.from(container.querySelectorAll('.box.selected:not(.locked)'));
                 const n = selected.length;
                 if (n === 0) return;
 
