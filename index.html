@@ -105,6 +105,9 @@
         <button id="delete-btn" class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600">
             Delete
         </button>
+        <button id="lock-btn" class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600">
+            Lock
+        </button>
     </div>
 
 
@@ -142,8 +145,13 @@ overflow-visible">
         </div>
     </div>
 
+
+    <!--********************** JAVASCRIPT*****************************************************-->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // keep track of clusters the user has “locked” by clicking their badge
+            const lockedBoxes = new Set();
+
             const panel = document.getElementById('panel');
             const container = document.getElementById('container');
             const COUNT = 9;
@@ -220,12 +228,18 @@ overflow-visible">
                 selStart = { x: 0, y: 0 };
 
             function clearSelection() {
-                container.querySelectorAll('.box.selected')
-                    .forEach(el => el.classList.remove('selected'));
+                // only un-select boxes that aren't locked
+                container.querySelectorAll('.box.selected').forEach(el => {
+                    if (!lockedBoxes.has(el)) {
+                        el.classList.remove('selected');
 
-                // remove any old count‐labels
-                container.querySelectorAll('.sel-count-label')
-                    .forEach(el => el.remove());
+                        // remove any old count‐labels
+                        container.querySelectorAll('.sel-count-label')
+                            .forEach(el => el.remove());
+                    }
+                });
+
+
             }
 
             function renderClusterLabels() {
@@ -347,15 +361,19 @@ overflow-visible">
                 const selB = selDiv.getBoundingClientRect();
                 selDiv.remove(); selDiv = null;
 
+                // 1) clear any prior inSelection flags
+                container.querySelectorAll('.box.inSelection')
+                    .forEach(el => el.classList.remove('inSelection'));
+
                 container.querySelectorAll('.box').forEach(el => {
+
                     const r = el.getBoundingClientRect();
                     if (r.left < selB.right && r.right > selB.left &&
                         r.top < selB.bottom && r.bottom > selB.top) {
-                        el.classList.add('selected');
+
+                        el.classList.add('selected', 'inSelection');
                     }
                 });
-
-
 
                 // 2) compute bounding‐box of selected boxes in container coords
                 const selectedEls = Array.from(container.querySelectorAll('.box.selected'));
@@ -381,33 +399,96 @@ overflow-visible">
                         clearSelection();
                         t.classList.add('selected');
                     }
-                    selectedEls = Array.from(container.querySelectorAll('.box.selected'));
+
+
+                    // 1) Grab only the boxes you just rectangle-selected:
+                    //    (we’re assuming finishSelectRect painted them with .inSelection)
+                    let rectSel = Array.from(
+                        container.querySelectorAll('.box.inSelection')
+                    );
+
+                    console.log('rectSel length:', rectSel.length);
+                    if (rectSel.length == 0) {
+                        rectSel = Array.from(
+                            container.querySelectorAll('.box.selected')
+                        );
+                    }
+
+                    // 2) Split that into locked vs unlocked:
+                    const locked = rectSel.filter(el => lockedBoxes.has(el));
+                    const unlocked = rectSel.filter(el => !lockedBoxes.has(el));
+
+                    // 3) Decide which group to actually drag:
+                    let toDrag;
+                    if (locked.length === rectSel.length) {
+                        // you dragged *only* locked boxes
+                        toDrag = locked;
+                    }
+                    else if (unlocked.length === rectSel.length) {
+                        // you dragged *only* unlocked (freshly selected) boxes
+                        toDrag = unlocked;
+                    }
+                    else {
+                        // mixed → drag everything you hit
+                        toDrag = rectSel;
+                    }
+
+                    // 4) Build your initPos from *that* array:
+                    currentInit = toDrag.map(el => ({
+                        el,
+                        x: parseFloat(el.dataset.x),
+                        y: parseFloat(el.dataset.y),
+                    }));
+                    /* selectedEls = Array.from(container.querySelectorAll('.box.selected'));
+                    selectedElsLocked = Array.from(container.querySelectorAll('.box.locked')); //could also use: const allLocked = Array.from(lockedBoxes);
+                    selectedElsNotLocked = Array.from(container.querySelectorAll('.box.selected:not(.locked)'));
+
+                    const lockedCount = selectedEls.filter(el => lockedBoxes.has(el)).length;
+                    const totalCount = selectedEls.length;
+
                     initPos = selectedEls.map(el => ({
                         el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
                     }));
+                    initPosLocked = selectedElsLocked.map(el => ({
+                        el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
+                    }));
+                    initPosNotLocked = selectedElsNotLocked.map(el => ({
+                        el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
+                    }));
+
+                    const allLocked = (lockedCount === totalCount);
+                    const allUnlocked = (lockedCount === 0);
+                    const mixed = !allLocked && !allUnlocked;
+
+                    // now you can branch on the three states:
+                    if (allLocked) {
+                        // only locked boxes were selected
+                        currentInit = initPosLocked;
+                    }
+                    else if (allUnlocked) {
+                        // only freshly‐selected (unlocked) boxes
+                        currentInit = initPosNotLocked;
+                    }
+                    else { //mixed
+                        // both kinds in the same drag‐select
+                        currentInit = initPos;
+                    } */
+
                     delta = { x: 0, y: 0 };
-                    groupDrag = selectedEls.length > 1;
+                    //groupDrag = selectedEls.length > 1;
+                    groupDrag = true;
                 },
                 onmove(event) {
                     const dx = event.dx / zoomLevel, dy = event.dy / zoomLevel;
-                    if (groupDrag) {
-                        delta.x += dx; delta.y += dy;
-                        initPos.forEach(item => {
-                            const nx = item.x + delta.x, ny = item.y + delta.y;
-                            item.el.style.left = nx + 'px';
-                            item.el.style.top = ny + 'px';
-                            item.el.dataset.x = nx;
-                            item.el.dataset.y = ny;
-                        });
-                    } else {
-                        const t = event.target;
-                        const x = (parseFloat(t.dataset.x) || 0) + dx;
-                        const y = (parseFloat(t.dataset.y) || 0) + dy;
-                        t.style.left = x + 'px';
-                        t.style.top = y + 'px';
-                        t.dataset.x = x;
-                        t.dataset.y = y;
-                    }
+                    delta.x += dx; delta.y += dy;
+
+                    currentInit.forEach(item => {
+                        const nx = item.x + delta.x, ny = item.y + delta.y;
+                        item.el.style.left = nx + 'px';
+                        item.el.style.top = ny + 'px';
+                        item.el.dataset.x = nx;
+                        item.el.dataset.y = ny;
+                    });
 
                     renderClusterLabels();
                 }
@@ -596,6 +677,23 @@ overflow-visible">
                 container.querySelectorAll('.box.selected').forEach(el => el.remove());
                 // clear any selection state and count-label
                 clearSelection();
+            });
+
+            document.getElementById('lock-btn').addEventListener('click', () => {
+                const selected = Array.from(container.querySelectorAll('.box.selected'));
+                selected.forEach(box => {
+                    if (lockedBoxes.has(box)) {
+                        // it’s already locked → unlock it
+                        lockedBoxes.delete(box);
+                        box.classList.remove('locked');
+                    } else {
+                        // not locked yet → lock it
+                        lockedBoxes.add(box);
+                        box.classList.add('locked');
+                    }
+                });
+                clearSelection();
+                //console.log('Locked boxes count:', lockedBoxes.size);
             });
 
 
