@@ -82,6 +82,16 @@
         z-index: 11;
       }
 
+      /* 1) give the tutorial window a border and rounded corners */
+      #tutorial {
+        border: 1px solid #888; /* or whatever color */
+        border-radius: 0.5rem; /* match your header/body rounding */
+        overflow: hidden; /* clip child corners */
+        /* 2) animate size changes */
+        transition: max-width 0.1s ease, max-height 0.1s ease, width 0.1s ease,
+          height 0.1s ease;
+      }
+
       /* hide full text by default */
       #tutorial-content-full {
         display: none;
@@ -101,6 +111,22 @@
       }
       #tutorial.expanded #tutorial-content-full {
         display: block;
+      }
+
+      /* limit the body to 50% of the viewport, and let it scroll */
+      #tutorial.expanded #tutorial-body {
+        max-height: 50vh;
+        overflow-y: auto;
+      }
+
+      /* COLLAPSED: stays whatever its auto-width is */
+      #tutorial.collapsed {
+        max-width: 20rem;
+      }
+
+      /* EXPANDED: cap at 66% of viewport width */
+      #tutorial.expanded {
+        max-width: 66vw;
       }
     </style>
   </head>
@@ -273,8 +299,8 @@
               - Copy button will copy the current selection and paste the copy
               on top of the old selection. Copying one row of blocks will paste
               the new row directly under the original. This means you can
-              quickly build large square groups using the starting blocks. -
-              Delete will remove the current selection
+              quickly build large square groups using the starting blocks.<br />
+              - Delete will remove the current selection
             </p>
           </div>
 
