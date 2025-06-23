@@ -82,6 +82,11 @@
         z-index: 11;
       }
 
+      #legend {
+        border: 1px solid #888;
+        border-radius: 0.5rem;
+        overflow: hidden; /* clip child corners */
+      }
       /* 1) give the tutorial window a border and rounded corners */
       #tutorial {
         border: 1px solid #888; /* or whatever color */
@@ -121,7 +126,7 @@
 
       /* COLLAPSED: stays whatever its auto-width is */
       #tutorial.collapsed {
-        max-width: 20rem;
+        max-width: 13rem;
       }
 
       /* EXPANDED: cap at 66% of viewport width */
@@ -195,6 +200,27 @@
       >
         Lock
       </button>
+    </div>
+
+    <div id="legend" class="absolute top-16 left-4 z-20">
+      <div
+        class="bg-gray-700 text-white px-3 py-2 rounded shadow w-30 space-y-1"
+      >
+        <div class="font-bold">Legend</div>
+        <div class="flex items-center space-x-2">
+          <!-- mini block icon -->
+          <div class="w-6 h-6 bg-gray-600 rounded border border-gray-500"></div>
+          <span>=</span>
+          <!-- input for “value per block” -->
+          <input
+            id="block-value"
+            type="number"
+            value="1"
+            min="0"
+            class="bg-gray-800 text-white rounded px-1 text-center w-12 focus:outline-none"
+          />
+        </div>
+      </div>
     </div>
 
     <!-- <div class="absolute bottom-4 left-4 z-20">
@@ -382,7 +408,7 @@
         const COUNT = 9;
         const SIZE = 96; // px
         const GAP = 16; // px WIP
-        let zoomLevel = 1.0;
+        let zoomLevel = 0.8;
 
         function repositionCountLabel() {
           const lbl = container.querySelector(".sel-count-label");
@@ -423,7 +449,7 @@
             "shadow-lg",
             "cursor-move",
           ].join(" "); // 'floating'
-          const startX = 16 + i * (SIZE + 16),
+          const startX = 250 + i * (SIZE + 16),
             startY = 80;
           box.style.left = startX + "px";
           box.style.top = startY + "px";
@@ -545,7 +571,15 @@
               "pointer-events-none",
               "z-20",
             ].join(" ");
-            lbl.textContent = cluster.length;
+
+            // get the user’s “blocks → value” multiplier:
+            const perBlock = parseFloat(
+              document.getElementById("block-value").value
+            );
+            if (perBlock < 1) {
+              perBlock = 1; // enforce minimum
+            }
+            lbl.textContent = cluster.length * perBlock;
 
             // position & cancel zoom
             const labelX = minX + (maxX - minX) / 2;
@@ -1073,6 +1107,11 @@
             tut.classList.add("expanded");
             toggle.textContent = "−";
           }
+        });
+
+        document.getElementById("block-value").addEventListener("input", () => {
+          // re-draw labels for whatever is currently selected
+          renderClusterLabels();
         });
       });
     </script>
