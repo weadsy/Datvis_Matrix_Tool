@@ -22,6 +22,95 @@
         }
       }
 
+      /* Overlay styles */
+      .landing-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(8px);
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+      }
+
+      /* Content box styles */
+      .landing-content {
+        background-color: #1f2937; /* Dark background to match theme */
+        color: white;
+        padding: 2.5rem;
+        border-radius: 0.75rem;
+        max-width: 500px;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        border: 1px solid #374151;
+      }
+
+      .landing-content h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .landing-content p {
+        margin-bottom: 1.5rem;
+        color: #d1d5db;
+      }
+
+      .landing-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+      }
+
+      .landing-button {
+        background-color: #374151;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .landing-button:hover {
+        background-color: #4b5563;
+      }
+
+      .landing-button.primary {
+        background-color: #3b82f6;
+      }
+
+      .landing-button.primary:hover {
+        background-color: #2563eb;
+      }
+
+      /* Hide overlay when dismissed */
+      .landing-overlay.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      /* make each box a flex‐container centered both ways */
+      .box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* style the label and prevent it from catching pointer events */
+      .box-label {
+        pointer-events: none;
+        user-select: none;
+        color: white; /* or whatever fits your theme */
+        font-size: 3rem; /* adjust if you need it bigger/smaller */
+      }
+
       .floating {
         animation: float 3s ease-in-out infinite;
       }
@@ -94,6 +183,12 @@
         /* 2) animate size changes */
         transition: max-width 0.1s ease, max-height 0.1s ease, width 0.1s ease,
           height 0.1s ease;
+      }
+
+      /* anywhere in your stylesheet */
+      #tutorial.ui-control:hover {
+        opacity: 1 !important;
+        pointer-events: all; /* so you can still interact with it */
       }
 
       #tutorial.ui-control {
@@ -438,12 +533,56 @@
       </div>
     </div>
 
+    <div class="landing-overlay" id="landingOverlay">
+      <div class="landing-content">
+        <h1>Welcome to the Tool Suite</h1>
+        <p>
+          This interactive workspace allows you to create, manipulate, and
+          organize visual elements. Drag to select items, use the slider to
+          zoom, and group elements together.
+        </p>
+        <div class="landing-buttons">
+          <button class="landing-button primary" id="scaleToolBtn">
+            Scale Tool
+          </button>
+          <button class="landing-button" id="matrixToolBtn">Matrix Tool</button>
+        </div>
+      </div>
+    </div>
+
     <!--********************** JAVASCRIPT*****************************************************-->
     <script>
       document.addEventListener("DOMContentLoaded", () => {
+        // Landing overlay logic
+        const landingOverlay = document.getElementById("landingOverlay");
+        const scaleToolBtn = document.getElementById("scaleToolBtn");
+        const matrixToolBtn = document.getElementById("matrixToolBtn");
+
+        // Check if we've shown the landing page before
+        const hasSeenLanding = localStorage.getItem("hasSeenLanding");
+
+        // If we want to always show it (or haven't seen it yet)
+        if (!hasSeenLanding) {
+          landingOverlay.classList.remove("hidden");
+        } else {
+          //landingOverlay.classList.add("hidden");
+        }
+
+        // Scale tool button - hide overlay and save preference
+        scaleToolBtn.addEventListener("click", function () {
+          landingOverlay.classList.add("hidden");
+          localStorage.setItem("hasSeenLanding", "true");
+        });
+
+        // Matrix tool button (placeholder for now)
+        matrixToolBtn.addEventListener("click", function () {
+          // Will implement later
+          //alert("Matrix Tool coming soon!");
+        });
+
         // how close to the edge (in px) before we show UI:
         const SHOW_MARGIN = 100;
-        const HIDE_MARGIN = 150;
+        const HIDE_MARGIN = 190;
 
         // grab all your controls:
         const uiControls = document.querySelectorAll(".ui-control");
@@ -532,6 +671,11 @@
           box.style.top = startY + "px";
           box.dataset.x = startX;
           box.dataset.y = startY;
+
+          const label = document.createElement("div");
+          label.className = "box-label";
+          label.textContent = document.getElementById("block-value").value;
+          box.appendChild(label);
           // random float phase
           //box.style.animationDelay = `-${Math.random()*3}s`;
           container.appendChild(box);
@@ -555,6 +699,12 @@
           box.dataset.x = x;
           box.dataset.y = y;
           box.style.animationDelay = `-${Math.random() * 3}s`;
+
+          const label = document.createElement("div");
+          label.className = "box-label";
+          label.textContent = document.getElementById("block-value").value;
+          box.appendChild(label);
+
           container.appendChild(box);
 
           // 3) mark it selected
@@ -650,10 +800,10 @@
             ].join(" ");
 
             // get the user’s “blocks → value” multiplier:
-            const perBlock = parseFloat(
+            let perBlock = parseFloat(
               document.getElementById("block-value").value
             );
-            if (perBlock < 1) {
+            if (isNaN(perBlock) || perBlock < 1) {
               perBlock = 1; // enforce minimum
             }
             lbl.textContent = cluster.length * perBlock;
@@ -1197,6 +1347,20 @@
         });
 
         document.getElementById("block-value").addEventListener("input", () => {
+          const boxVals = Array.from(container.querySelectorAll(".box"));
+          boxVals.forEach((box) => {
+            const label = box.querySelector(".box-label");
+            label.textContent = document.getElementById("block-value").value;
+          });
+          /* container.querySelectorAll(".box").forEach((el) => {
+           // el.box-label = document.getElementById("block-value").value;
+          }); */
+          /* const blockInput = document.getElementById("block-value");
+          let perBlock = parseFloat(blockInput.value);
+          if (!isNaN(perBlock) && perBlock < 1) {
+            perBlock = 1; // enforce minimum
+          }
+          blockInput.value = perBlock;  // update the actual input */
           // re-draw labels for whatever is currently selected
           renderClusterLabels();
         });
