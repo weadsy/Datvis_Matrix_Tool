@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DatVis Tool Suite</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- interact.js v1 -->
+    <script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.11/dist/interact.min.js"></script>
+    <style>
+      /* floating animation */
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+
+      /* Overlay styles */
+      .landing-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(8px);
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+      }
+
+      /* Content box styles */
+      .landing-content {
+        background-color: #1f2937; /* Dark background to match theme */
+        color: white;
+        padding: 2.5rem;
+        border-radius: 0.75rem;
+        max-width: 500px;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        border: 1px solid #374151;
+      }
+
+      .landing-content h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .landing-content p {
+        margin-bottom: 1.5rem;
+        color: #d1d5db;
+      }
+
+      .landing-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+      }
+
+      .landing-button {
+        background-color: #374151;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .landing-button:hover {
+        background-color: #4b5563;
+      }
+
+      .landing-button.primary {
+        background-color: #3b82f6;
+      }
+
+      .landing-button.primary:hover {
+        background-color: #2563eb;
+      }
+
+      /* Hide overlay when dismissed */
+      .landing-overlay.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      /* make each box a flex‐container centered both ways */
+      .box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* style the label and prevent it from catching pointer events */
+      .box-label {
+        pointer-events: none;
+        user-select: none;
+        color: white; /* or whatever fits your theme */
+        font-size: 3rem; /* adjust if you need it bigger/smaller */
+      }
+
+      .floating {
+        animation: float 3s ease-in-out infinite;
+      }
+
+      /* .box {
+            transition: left 0.3s ease, top 0.3s ease;
+        } */
+      /* only boxes with this class will animate their left/top */
+      .group-transition {
+        transition: left 0.3s ease, top 0.3s ease;
+      }
+
+      /* scale only the inner container */
+      #container {
+        transform-origin: top left;
+        /*transition: transform 0.2s ease-out;*/
+        /* animate transform, width and height over 300ms with ease-in-out */
+        transition: transform 0.05s ease-in-out, width 0.05s ease-in-out,
+          height 0.05s ease-in-out;
+        padding-top: 10rem;
+      }
+
+      /* highlight selected boxes */
+      .box.selected {
+        outline: 2px solid #88f;
+        outline-offset: 2px;
+      }
+
+      /* highlight locked boxes */
+      .box.locked {
+        outline: 2px solid rgb(255, 3, 74);
+        outline-offset: 2px;
+      }
+
+      /* selection rectangle */
+      .select-rect {
+        position: absolute;
+        border: 1px dashed white;
+        background-color: rgba(255, 255, 255, 0.1);
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .box.locked.inSelection {
+        outline: 2px dashed rgb(255, 3, 74);
+        outline-offset: 2px;
+      }
+
+      .sel-count-label {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        pointer-events: none;
+        z-index: 11;
+      }
+
+      #legend {
+        border: 1px solid #888;
+        border-radius: 0.5rem;
+        overflow: hidden; /* clip child corners */
+      }
+      /* 1) give the tutorial window a border and rounded corners */
+      #tutorial {
+        border: 1px solid #888; /* or whatever color */
+        border-radius: 0.5rem; /* match your header/body rounding */
+        overflow: hidden; /* clip child corners */
+        /* 2) animate size changes */
+        transition: max-width 0.1s ease, max-height 0.1s ease, width 0.1s ease,
+          height 0.1s ease;
+      }
+
+      /* anywhere in your stylesheet */
+      #tutorial.ui-control:hover {
+        opacity: 1 !important;
+        pointer-events: all; /* so you can still interact with it */
+      }
+
+      #tutorial.ui-control {
+        /* this selector is more specific than #tutorial, so it wins */
+        transition: opacity 0.4s ease-in-out;
+      }
+
+      /* hide full text by default */
+      #tutorial-content-full {
+        display: none;
+      }
+
+      /* COLLAPSED: show only the “min” content */
+      #tutorial.collapsed #tutorial-content-min {
+        display: block;
+      }
+      #tutorial.collapsed #tutorial-content-full {
+        display: none;
+      }
+
+      /* EXPANDED: show only the “full” content */
+      #tutorial.expanded #tutorial-content-min {
+        display: none;
+      }
+      #tutorial.expanded #tutorial-content-full {
+        display: block;
+      }
+
+      /* limit the body to 50% of the viewport, and let it scroll */
+      #tutorial.expanded #tutorial-body {
+        max-height: 50vh;
+        overflow-y: auto;
+      }
+
+      /* COLLAPSED: stays whatever its auto-width is */
+      #tutorial.collapsed {
+        max-width: 13rem;
+      }
+
+      /* EXPANDED: cap at 66% of viewport width */
+      #tutorial.expanded {
+        max-width: 66vw;
+      }
+
+      .ui-control {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease-in-out;
+      }
+
+      .ui-control.visible {
+        opacity: 1;
+        pointer-events: all;
+        transition-delay: 0s;
+      }
+
+      .ui-control:not(.visible) {
+        transition-delay: 0s;
+      }
+
+      /* disable selection everywhere */
+      body {
+        -webkit-user-select: none; /* Chrome/Safari */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* IE10+ */
+        user-select: none; /* Standard */
+      }
+
+      /* but allow selecting/caret in inputs, textareas, etc. */
+      input,
+      textarea,
+      select {
+        -webkit-user-select: text;
+        -moz-user-select: text;
+        -ms-user-select: text;
+        user-select: text;
+      }
+    </style>
+  </head>
+
+  <body
+    class="overflow-hidden bg-gray-900 min-h-screen p-2 flex items-center justify-center"
+  >
+    <!-- zoom controls -->
+    <div class="ui-control absolute top-4 right-4 flex space-x-2 z-20">
+      <button
+        id="zoom-in"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        +
+      </button>
+      <button
+        id="zoom-out"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        –
+      </button>
+      <button
+        id="group-btn"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        Group
+      </button>
+    </div>
+
+    <!-- new: vertical slider, 1rem below the buttons -->
+    <div
+      class="ui-control absolute"
+      style="top: 7rem; right: -2rem; z-index: 20"
+    >
+      <input
+        id="zoom-slider"
+        type="range"
+        min="0.2"
+        max="1.5"
+        step="0.01"
+        value="1"
+        class="w-32 h-2 -rotate-90 origin-center"
+      />
+    </div>
+
+    <div class="ui-control absolute top-4 left-4 flex space-x-2 z-20">
+      <!-- bg-green-600 text-white px-3 py-1 rounded shadow hover:bg-green-500-->
+      <button
+        id="add-square"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        Add Square
+      </button>
+      <button
+        id="copy-btn"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        Copy
+      </button>
+      <button
+        id="delete-btn"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        Delete
+      </button>
+      <button
+        id="lock-btn"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        Lock
+      </button>
+    </div>
+
+    <div id="legend" class="ui-control absolute top-16 left-4 z-20">
+      <div
+        class="bg-gray-700 text-white px-3 py-2 rounded shadow w-30 space-y-1"
+      >
+        <div class="font-bold">Legend</div>
+        <div class="flex items-center space-x-2">
+          <!-- mini block icon -->
+          <div class="w-6 h-6 bg-gray-600 rounded border border-gray-500"></div>
+          <span>=</span>
+          <!-- input for “value per block” -->
+          <input
+            id="block-value"
+            type="number"
+            value=""
+            min="0"
+            class="bg-gray-800 text-white rounded px-1 text-center w-12 focus:outline-none"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- <div class="absolute bottom-4 left-4 z-20">
+        <button id="help-btn" class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600">
+            HELP
+        </button>
+    </div> -->
+
+    <!-- TUTORIAL WINDOW -->
+    <div id="tutorial" class="ui-control absolute bottom-4 left-4 z-20">
+      <div
+        id="tutorial-header"
+        class="flex justify-between items-center bg-gray-700 text-white px-3 py-2 rounded-t shadow cursor-pointer"
+      >
+        <div class="font-bold text-lg">INFO</div>
+        <button id="tutorial-toggle" class="text-xl leading-none">−</button>
+      </div>
+
+      <div
+        id="tutorial-body"
+        class="bg-gray-700 text-white rounded-b shadow overflow-auto"
+      >
+        <!-- Minimized content -->
+        <div id="tutorial-content-min" class="p-3">
+          <p class="text-sm leading-snug">
+            • Drag to select a group of squares and see their square counts.<br />
+            • With selected squares you can: drag, group (to grid), copy, lock,
+            and delete.<br />
+            • Control zoom with slider bar or mouse wheel.
+          </p>
+        </div>
+
+        <!-- Expanded placeholder content -->
+        <div
+          id="tutorial-content-full"
+          class="p-4 space-y-1 bg-gray-700 text-white rounded-b shadow overflow-auto"
+        >
+          <!-- <div class="text-lg font-bold mb-2">Full Tutorial</div> -->
+
+          <!-- DRAGGING SECTION -->
+          <div>
+            <h3 class="text-xl underline mb-1 underline-offset-[6px]">
+              Dragging/Selection
+            </h3>
+            <p class="ml-4 py-1 text-sm leading-snug">
+              - Select squares by dragging a rectangle around them, then move
+              them by clicking &amp; dragging. You can drag individual squares
+              or groups of squares. <br />
+              - The number at the top of selected block(s) is the number of
+              blocks in that specific group. <br />
+              - Once blocks are selected you can use the buttons at the top to
+              perform operations on the groups of blocks.
+            </p>
+          </div>
+
+          <!-- GROUPING SECTION -->
+          <div>
+            <h3 class="text-xl underline mb-1 underline-offset-[6px]">
+              Grouping
+            </h3>
+            <p class="ml-4 py-1 text-sm leading-snug">
+              - When blocks are selected you can click the "Group" button to
+              arrange blocks into a square grid formation. Locked blocks will
+              not be affected.
+            </p>
+          </div>
+
+          <!-- LOCKING SECTION -->
+          <div>
+            <h3 class="text-xl underline mb-1 underline-offset-[6px]">
+              Locking
+            </h3>
+            <p class="ml-4 py-1 text-sm leading-snug">
+              - After selecting a group, hit “Lock” so that group moves as one
+              unit. It will stay continuously selected and you won't be able to
+              break up the formation. <br />
+              - The locking functionality is very robust. The blocks are
+              selected but unlocked selected blocks and locked selected blocks
+              will not interact with each other. They can not be grouped.
+            </p>
+          </div>
+
+          <!-- ZOOMING SECTION -->
+          <div>
+            <h3 class="text-xl underline mb-1 underline-offset-[6px]">
+              Zooming
+            </h3>
+            <p class="ml-4 py-1 text-sm leading-snug">
+              - Use the slider bar or mouse wheel to zoom in and out on the
+              canvas. (or +/- buttons)
+            </p>
+          </div>
+
+          <!-- ADD COPY DELETE SECTION -->
+          <div>
+            <h3 class="text-xl underline mb-1 underline-offset-[6px]">
+              Add, Copy, Delete
+            </h3>
+            <p class="ml-4 py-1 text-sm leading-snug">
+              - Add Square will spawn a new square under the current selection
+              (or top right). <br />
+              - Copy button will copy the current selection and paste the copy
+              on top of the old selection. Copying one row of blocks will paste
+              the new row directly under the original. This means you can
+              quickly build large square groups using the starting blocks.<br />
+              - Delete will remove the current selection
+            </p>
+          </div>
+
+          <!-- LEGEND SECTION -->
+          <div>
+            <h3 class="text-xl underline mb-1 underline-offset-[6px]">
+              Legend
+            </h3>
+            <p class="ml-4 py-1 text-sm leading-snug">
+              - The legend allows you to change how much a block represents. By
+              default a single block represents 1 unit (number is hidden). This
+              can be changed by clicking the arrow buttons or entering your own
+              number. Remove the text to go back to blank squares.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- outer panel -->
+    <div
+      id="panel"
+      class="flex flex-col w-full h-[calc(100vh-16px)] max-w-[calc(100vw-16px)] bg-gray-800 rounded-lg border-2 border-gray-700 overflow-visible"
+    >
+      <!-- panel header -->
+      <div class="flex items-center justify-center space-x-4 py-2">
+        <div
+          class="ml-15 text-3xl text-white font-bold underline underline-offset-[6px]"
+        >
+          Scale Tool
+        </div>
+        <div id="kofi-widget">
+          <script src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"></script>
+          <script>
+            kofiwidget2.init("Support me on Ko-fi", "#72a4f2", "J3J51GNZVY");
+            kofiwidget2.draw();
+          </script>
+        </div>
+      </div>
+
+      <!-- zooms here -->
+      <div id="container" class="relative flex-1 overflow-visible">
+        <!-- boxes injected here -->
+      </div>
+    </div>
+
+    <div class="landing-overlay" id="landingOverlay">
+      <div class="landing-content">
+        <h1>Welcome To Scale Tool</h1>
+        <p>
+          This interactive workspace allows you to create, manipulate, and
+          organize visual elements. Relate blocks to numbers for math based
+          block configurations. Data visualization made easy, please explore the
+          tooling options below.
+        </p>
+        <div class="landing-buttons">
+          <button class="landing-button primary" id="scaleToolBtn">
+            Scale Tool
+          </button>
+          <button class="landing-button" id="matrixToolBtn">
+            Matrix Tool (WIP)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!--********************** JAVASCRIPT*****************************************************-->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Landing overlay logic
+        const landingOverlay = document.getElementById("landingOverlay");
+        const scaleToolBtn = document.getElementById("scaleToolBtn");
+        const matrixToolBtn = document.getElementById("matrixToolBtn");
+        let onLandingPage = true;
+
+        // Check if we've shown the landing page before
+        const hasSeenLanding = localStorage.getItem("hasSeenLanding");
+
+        // If we want to always show it (or haven't seen it yet)
+        if (!hasSeenLanding) {
+          landingOverlay.classList.remove("hidden");
+        } else {
+          //landingOverlay.classList.add("hidden");
+        }
+
+        // Scale tool button - hide overlay and save preference
+        scaleToolBtn.addEventListener("click", function () {
+          landingOverlay.classList.add("hidden");
+          localStorage.setItem("hasSeenLanding", "true");
+          onLandingPage = false;
+        });
+
+        // Matrix tool button (placeholder for now)
+        matrixToolBtn.addEventListener("click", function () {
+          window.location.href = "/matrix_tool/";
+        });
+
+        // how close to the edge (in px) before we show UI:
+        const SHOW_MARGIN = 100;
+        const HIDE_MARGIN = 190;
+
+        // grab all your controls:
+        const uiControls = document.querySelectorAll(".ui-control");
+        uiControls.forEach((el) => el.classList.add("visible"));
+
+        function updateUI(e) {
+          if (isSelecting || isDragging || onLandingPage) return;
+          const x = e.clientX,
+            y = e.clientY;
+          const w = window.innerWidth,
+            h = window.innerHeight;
+
+          // detect if UI is already visible (all controls share .visible)
+          const uiVisible = uiControls[0].classList.contains("visible");
+
+          // pick the appropriate margin
+          const MARGIN = uiVisible ? HIDE_MARGIN : SHOW_MARGIN;
+
+          // if pointer is within MARGIN of ANY edge:
+          const nearEdge =
+            x < MARGIN || x > w - MARGIN || y < MARGIN || y > h - MARGIN;
+
+          uiControls.forEach((el) => {
+            el.classList.toggle("visible", nearEdge);
+          });
+        }
+
+        // listen once on the whole document:
+        document.addEventListener("mousemove", updateUI);
+
+        // also trigger on touch (optional):
+        //document.addEventListener("touchstart", updateUI);
+
+        // keep track of clusters the user has “locked” by clicking their badge
+        const lockedBoxes = new Set();
+
+        const panel = document.getElementById("panel");
+        const container = document.getElementById("container");
+        const COUNT = 9;
+        const SIZE = 96; // px
+        const GAP = 16; // px WIP
+        let zoomLevel = 0.8;
+
+        function repositionCountLabel() {
+          const lbl = container.querySelector(".sel-count-label");
+          if (!lbl) return;
+
+          const selectedEls = Array.from(
+            container.querySelectorAll(".box.selected")
+          );
+          if (!selectedEls.length) {
+            lbl.remove();
+            return;
+          }
+
+          const xs = selectedEls.map((el) => +el.dataset.x);
+          const ys = selectedEls.map((el) => +el.dataset.y);
+          const minX = Math.min(...xs);
+          const maxX = Math.max(...xs) + SIZE;
+          const minY = Math.min(...ys);
+
+          const labelX = minX + (maxX - minX) / 2;
+          const labelY = minY - 50;
+
+          lbl.style.left = `${labelX}px`;
+          lbl.style.top = `${labelY}px`;
+          lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
+        }
+
+        // 1) create boxes (blank)
+        for (let i = 0; i < COUNT; i++) {
+          const box = document.createElement("div");
+          box.className = [
+            "box",
+            "absolute",
+            "w-24",
+            "h-24",
+            "bg-gray-700",
+            "rounded-lg",
+            "shadow-lg",
+            "cursor-move",
+          ].join(" "); // 'floating'
+          const startX = 250 + i * (SIZE + 16),
+            startY = 80;
+          box.style.left = startX + "px";
+          box.style.top = startY + "px";
+          box.dataset.x = startX;
+          box.dataset.y = startY;
+
+          const label = document.createElement("div");
+          label.className = "box-label";
+          label.textContent = document.getElementById("block-value").value;
+          box.appendChild(label);
+          // random float phase
+          //box.style.animationDelay = `-${Math.random()*3}s`;
+          container.appendChild(box);
+        }
+
+        // helper: create a new box at (x,y) and hook up dragging
+        function createBox(x, y) {
+          const box = document.createElement("div");
+          box.className = [
+            "box",
+            "absolute",
+            "w-24",
+            "h-24",
+            "bg-gray-700",
+            "rounded-lg",
+            "shadow-lg",
+            "cursor-move",
+          ].join(" ");
+          box.style.left = x + "px";
+          box.style.top = y + "px";
+          box.dataset.x = x;
+          box.dataset.y = y;
+          box.style.animationDelay = `-${Math.random() * 3}s`;
+
+          const label = document.createElement("div");
+          label.className = "box-label";
+          label.textContent = document.getElementById("block-value").value;
+          box.appendChild(label);
+
+          container.appendChild(box);
+
+          // 3) mark it selected
+          box.classList.add("selected");
+          //interact(box).draggable(dragConfig);
+        }
+
+        // 2) selection‐rectangle (scaled!)
+        let isSelecting = false,
+          selDiv = null,
+          selStart = { x: 0, y: 0 };
+
+        function clearSelection() {
+          // only un-select boxes that aren't locked
+          container.querySelectorAll(".box.selected").forEach((el) => {
+            if (!lockedBoxes.has(el)) {
+              el.classList.remove("selected");
+
+              // remove any old count‐labels
+              container
+                .querySelectorAll(".sel-count-label")
+                .forEach((el) => el.remove());
+            }
+          });
+          // 1) clear any prior inSelection flags
+          container
+            .querySelectorAll(".box.inSelection")
+            .forEach((el) => el.classList.remove("inSelection"));
+        }
+
+        function renderClusterLabels() {
+          // 1) clear old labels
+          container
+            .querySelectorAll(".sel-count-label")
+            .forEach((lbl) => lbl.remove());
+
+          // 2) grab current selected boxes
+          const els = Array.from(container.querySelectorAll(".box.selected"));
+          if (!els.length) return;
+
+          // 3) union-find to cluster by proximity (≤ SIZE+20px both axes)
+          const n = els.length;
+          const parent = [...Array(n).keys()];
+          function find(i) {
+            return parent[i] === i ? i : (parent[i] = find(parent[i]));
+          }
+          function union(a, b) {
+            parent[find(b)] = find(a);
+          }
+
+          for (let i = 0; i < n; i++) {
+            const xi = +els[i].dataset.x,
+              yi = +els[i].dataset.y;
+            for (let j = i + 1; j < n; j++) {
+              const xj = +els[j].dataset.x,
+                yj = +els[j].dataset.y;
+              if (
+                Math.abs(xi - xj) <= SIZE + 20 &&
+                Math.abs(yi - yj) <= SIZE + 20
+              ) {
+                union(i, j);
+              }
+            }
+          }
+
+          // 4) bucket into groups
+          const groups = {};
+          for (let i = 0; i < n; i++) {
+            const r = find(i);
+            (groups[r] ||= []).push(els[i]);
+          }
+
+          // 5) for each group, append a label
+          Object.values(groups).forEach((cluster) => {
+            // compute bounding‐box of this cluster
+            const xs = cluster.map((el) => +el.dataset.x),
+              ys = cluster.map((el) => +el.dataset.y);
+            const minX = Math.min(...xs),
+              maxX = Math.max(...xs) + SIZE,
+              minY = Math.min(...ys);
+
+            const lbl = document.createElement("div");
+            lbl.className = [
+              "sel-count-label",
+              "bg-gray-700",
+              "text-white",
+              "px-2",
+              "py-1",
+              "rounded",
+              "shadow",
+              "pointer-events-none",
+              "z-20",
+            ].join(" ");
+
+            // get the user’s “blocks → value” multiplier:
+            let perBlock = parseFloat(
+              document.getElementById("block-value").value
+            );
+            if (isNaN(perBlock) || perBlock < 1) {
+              perBlock = 1; // enforce minimum
+            }
+            lbl.textContent = cluster.length * perBlock;
+
+            // position & cancel zoom
+            const labelX = minX + (maxX - minX) / 2;
+            const labelY = minY - 50;
+            lbl.style.left = `${labelX}px`;
+            lbl.style.top = `${labelY}px`;
+            lbl.style.transformOrigin = "center bottom";
+            lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
+
+            container.appendChild(lbl);
+          });
+        }
+
+        container.addEventListener("mousedown", (e) => {
+          if (e.button !== 0 || e.target !== container) return;
+
+          // immediately hide all your UI-controls on drag start:
+          uiControls.forEach((el) => el.classList.remove("visible"));
+
+          isSelecting = true;
+          console.log("iselecting:", isSelecting);
+          const crect = container.getBoundingClientRect();
+
+          // ↓ Adjust start to container‐local, unscaled coords
+          selStart.x = (e.clientX - crect.left) / zoomLevel;
+          selStart.y = (e.clientY - crect.top) / zoomLevel;
+
+          selDiv = document.createElement("div");
+          selDiv.className = "select-rect";
+          selDiv.style.left = selStart.x + "px";
+          selDiv.style.top = selStart.y + "px";
+          selDiv.style.width = "0px";
+          selDiv.style.height = "0px";
+          container.appendChild(selDiv);
+
+          clearSelection();
+          window.addEventListener("mousemove", updateSelectRect);
+          window.addEventListener("mouseup", finishSelectRect);
+        });
+
+        function updateSelectRect(e) {
+          if (!isSelecting) return;
+          const crect = container.getBoundingClientRect();
+
+          // ↓ Compute current point in container coords, dividing out zoom
+          const curX = (e.clientX - crect.left) / zoomLevel;
+          const curY = (e.clientY - crect.top) / zoomLevel;
+
+          const x1 = Math.min(selStart.x, curX),
+            y1 = Math.min(selStart.y, curY),
+            x2 = Math.max(selStart.x, curX),
+            y2 = Math.max(selStart.y, curY);
+
+          selDiv.style.left = x1 + "px";
+          selDiv.style.top = y1 + "px";
+          selDiv.style.width = x2 - x1 + "px";
+          selDiv.style.height = y2 - y1 + "px";
+        }
+
+        function finishSelectRect(e) {
+          if (!isSelecting) return;
+          isSelecting = false;
+          window.removeEventListener("mousemove", updateSelectRect);
+          window.removeEventListener("mouseup", finishSelectRect);
+
+          // get the selection‐rectangle bounds
+          const rectX = parseFloat(selDiv.style.left),
+            rectY = parseFloat(selDiv.style.top),
+            rectW = parseFloat(selDiv.style.width),
+            rectH = parseFloat(selDiv.style.height);
+
+          const selB = selDiv.getBoundingClientRect();
+          selDiv.remove();
+          selDiv = null;
+
+          // 1) clear any prior inSelection flags
+          container
+            .querySelectorAll(".box.inSelection")
+            .forEach((el) => el.classList.remove("inSelection"));
+
+          container.querySelectorAll(".box").forEach((el) => {
+            const r = el.getBoundingClientRect();
+            if (
+              r.left < selB.right &&
+              r.right > selB.left &&
+              r.top < selB.bottom &&
+              r.bottom > selB.top
+            ) {
+              el.classList.add("selected", "inSelection");
+            }
+          });
+          lockArray = Array.from(
+            container.querySelectorAll(".box.locked.inSelection")
+          );
+          console.log("length:", lockArray.length, " size:", lockedBoxes.size);
+
+          if (lockArray.length != lockedBoxes.size) {
+            lockArray.forEach((el) => {
+              el.classList.remove("inSelection"),
+                el.classList.add("removeSelection");
+            });
+          }
+
+          // 2) compute bounding‐box of selected boxes in container coords
+          const selectedEls = Array.from(
+            container.querySelectorAll(".box.selected:not(.removeSelection)")
+          );
+          if (selectedEls.length) {
+            renderClusterLabels();
+          }
+        }
+
+        // 3) draggable + group‐drag (unchanged)
+        let isDragging = false,
+          selectedEls = [],
+          initPos = [],
+          delta = { x: 0, y: 0 };
+        interact(".box").draggable({
+          inertia: true,
+          modifiers: [
+            interact.modifiers.restrictRect({
+              restriction: panel,
+              endOnly: false,
+              elementRect: { top: 0, left: 0, bottom: 1, right: 1 },
+            }),
+          ],
+          onstart(event) {
+            // immediately hide all your UI-controls on drag start:
+            uiControls.forEach((el) => el.classList.remove("visible"));
+            isDragging = true;
+            const t = event.target;
+
+            let one = false;
+            let lockDrag = false;
+            let lockDragAll = false;
+            let lockedBoxClicked = false;
+            if (
+              !t.classList.contains("selected") &&
+              !t.classList.contains("locked")
+            ) {
+              clearSelection();
+              t.classList.add("selected");
+              one = true;
+            }
+
+            if (t.classList.contains("locked")) {
+              //clearSelection();
+              //t.classList.add('selected');
+              lockedBoxClicked = true;
+            }
+
+            // 1) Grab only the boxes you just rectangle-selected:
+            //    (we’re assuming finishSelectRect painted them with .inSelection)
+            let rectSel = Array.from(
+              container.querySelectorAll(".box.inSelection")
+            );
+
+            console.log("rectSel length:", rectSel.length);
+            //let noSelect = false;
+            if (rectSel.length == 0) {
+              rectSel = Array.from(container.querySelectorAll(".box.selected"));
+              if (lockedBoxClicked) {
+                clearSelection();
+                //t.classList.add('selected');
+                lockDrag = true;
+              }
+            }
+
+            // 2) Split that into locked vs unlocked:
+            const locked = rectSel.filter((el) => lockedBoxes.has(el));
+            const unlocked = rectSel.filter((el) => !lockedBoxes.has(el));
+
+            // 3) Decide which group to actually drag:
+            let toDrag;
+            console.log("unlock length:", unlocked.length);
+            console.log("one:", one);
+            /* if (noSelect && (unlocked.length == 1)) {
+                        toDrag = unlocked;
+                        console.log('active');
+                    } */
+            if (unlocked.length === rectSel.length && lockedBoxClicked) {
+              console.log("unlocked active but drag changed to locked");
+              clearSelection();
+              //t.classList.add('selected');
+              toDrag = Array.from(container.querySelectorAll(".box.locked"));
+            } else if (one) {
+              toDrag = unlocked;
+              console.log("one active");
+            } else if (lockDrag) {
+              toDrag = locked;
+              console.log("lockdrag active");
+            } else if (locked.length === rectSel.length) {
+              // you dragged *only* locked boxes
+              toDrag = locked;
+              console.log("locked active");
+            } else if (unlocked.length === rectSel.length) {
+              // you dragged *only* unlocked (freshly selected) boxes
+              console.log("unlocked active");
+              toDrag = unlocked;
+            } else {
+              // mixed → drag everything you hit
+              console.log("mixed/all active");
+              toDrag = rectSel;
+            }
+
+            // 4) Build your initPos from *that* array:
+            currentInit = toDrag.map((el) => ({
+              el,
+              x: parseFloat(el.dataset.x),
+              y: parseFloat(el.dataset.y),
+            }));
+            /* selectedEls = Array.from(container.querySelectorAll('.box.selected'));
+                    selectedElsLocked = Array.from(container.querySelectorAll('.box.locked')); //could also use: const allLocked = Array.from(lockedBoxes);
+                    selectedElsNotLocked = Array.from(container.querySelectorAll('.box.selected:not(.locked)'));
+
+                    const lockedCount = selectedEls.filter(el => lockedBoxes.has(el)).length;
+                    const totalCount = selectedEls.length;
+
+                    initPos = selectedEls.map(el => ({
+                        el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
+                    }));
+                    initPosLocked = selectedElsLocked.map(el => ({
+                        el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
+                    }));
+                    initPosNotLocked = selectedElsNotLocked.map(el => ({
+                        el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
+                    }));
+
+                    const allLocked = (lockedCount === totalCount);
+                    const allUnlocked = (lockedCount === 0);
+                    const mixed = !allLocked && !allUnlocked;
+
+                    // now you can branch on the three states:
+                    if (allLocked) {
+                        // only locked boxes were selected
+                        currentInit = initPosLocked;
+                    }
+                    else if (allUnlocked) {
+                        // only freshly‐selected (unlocked) boxes
+                        currentInit = initPosNotLocked;
+                    }
+                    else { //mixed
+                        // both kinds in the same drag‐select
+                        currentInit = initPos;
+                    } */
+
+            delta = { x: 0, y: 0 };
+            groupDrag = selectedEls.length > 1;
+            console.log("");
+            //groupDrag = true;
+          },
+          onmove(event) {
+            const dx = event.dx / zoomLevel,
+              dy = event.dy / zoomLevel;
+            delta.x += dx;
+            delta.y += dy;
+
+            currentInit.forEach((item) => {
+              const nx = item.x + delta.x,
+                ny = item.y + delta.y;
+              item.el.style.left = nx + "px";
+              item.el.style.top = ny + "px";
+              item.el.dataset.x = nx;
+              item.el.dataset.y = ny;
+            });
+
+            renderClusterLabels();
+          },
+          onend(event) {
+            // drag just finished
+            isDragging = false;
+          },
+        });
+
+        // 4) zoom logic (updated)
+        const { width: origW, height: origH } =
+          container.getBoundingClientRect();
+
+        function applyZoom() {
+          // scale the visuals
+          container.style.flex = "none";
+          container.style.transform = `scale(${zoomLevel})`;
+          // grow/shrink the raw box so its hit‐area stays constant
+          container.style.width = `${origW / zoomLevel}px`;
+          container.style.height = `${origH / zoomLevel}px`;
+
+          // 2) update every count‐label so it stays constant in screen-space
+          container.querySelectorAll(".sel-count-label").forEach((lbl) => {
+            // we already set transformOrigin to 'center bottom' when we created it
+            lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
+          });
+        }
+
+        document.getElementById("zoom-in").onclick = () => {
+          zoomLevel = Math.min(2, zoomLevel + 0.1);
+          applyZoom();
+        };
+        document.getElementById("zoom-out").onclick = () => {
+          zoomLevel = Math.max(0.3, zoomLevel - 0.1);
+          applyZoom();
+        };
+
+        // initialize on load
+        applyZoom();
+
+        // grab the new button
+        const groupBtn = document.getElementById("group-btn");
+
+        groupBtn.addEventListener("click", () => {
+          // find all selected boxes
+          const selected = Array.from(
+            container.querySelectorAll(".box.selected:not(.locked)")
+          );
+          const n = selected.length;
+          if (n === 0) return;
+
+          // 1) add the transition class
+          selected.forEach((el) => el.classList.add("group-transition"));
+
+          // 2) force the browser to notice the class before we move them
+          //    so the transition actually runs:
+          selected[0].offsetWidth; // reflow
+
+          // 1) compute grid dimensions
+          const cols = Math.ceil(Math.sqrt(n)); // e.g. sqrt(7)=2.64→3 columns
+          const rows = Math.ceil(n / cols); // fill rows of that many cols
+          const GAP = 16; // same gap you used when laying out
+          const SIZE = 96; // your box size
+
+          // 2) compute the “center” of the current selection
+          const sum = selected.reduce(
+            (s, el) => ({
+              x: s.x + parseFloat(el.dataset.x),
+              y: s.y + parseFloat(el.dataset.y),
+            }),
+            { x: 0, y: 0 }
+          );
+
+          const centerX = sum.x / n;
+          const centerY = sum.y / n;
+
+          // 3) figure out total pixel dimensions of the new grid
+          const totalW = (cols - 1) * (SIZE + GAP);
+          const totalH = (rows - 1) * (SIZE + GAP);
+
+          // 4) pick a start-point so that the grid’s center sits at (centerX, centerY)
+          const startX = centerX - totalW / 2;
+          const startY = centerY - totalH / 2;
+
+          // 5) re-position each box into its [row, col] slot
+          selected.forEach((el, i) => {
+            const row = Math.floor(i / cols);
+            const col = i % cols;
+            const x = startX + col * (SIZE + GAP);
+            const y = startY + row * (SIZE + GAP);
+
+            el.style.left = x + "px";
+            el.style.top = y + "px";
+            el.dataset.x = x;
+            el.dataset.y = y;
+          });
+
+          // 4) after the animation duration, strip the class so future drags are instant
+          setTimeout(() => {
+            selected.forEach((el) => el.classList.remove("group-transition"));
+          }, 300); // match the 0.3s in your CSS
+
+          // Remove any existing count‐labels
+          //container.querySelectorAll('.sel-count-label')
+          //        .forEach(lbl => lbl.remove());
+
+          //clearSelection();
+          renderClusterLabels();
+        });
+
+        // 6) **ADD SQUARE** button
+        document.getElementById("add-square").addEventListener("click", () => {
+          const selected = Array.from(
+            container.querySelectorAll(".box.selected")
+          );
+          let x, y;
+
+          if (selected.length > 0) {
+            // find the SW-most selected box
+            const sw = selected.reduce((best, el) => {
+              const ex = parseFloat(el.dataset.x),
+                ey = parseFloat(el.dataset.y);
+              const bx = parseFloat(best.dataset.x),
+                by = parseFloat(best.dataset.y);
+              // pick the one with larger y (lower on screen),
+              // and if tie, the smaller x (more to the left)
+              if (ey > by || (ey === by && ex < bx)) return el;
+              return best;
+            }, selected[0]);
+
+            x = parseFloat(sw.dataset.x);
+            y = parseFloat(sw.dataset.y) + SIZE + GAP; // directly below
+          } else {
+            // fallback: top-left if nothing selected
+            x = 16;
+            y = 80;
+          }
+
+          createBox(x, y);
+        });
+
+        const slider = document.getElementById("zoom-slider");
+
+        // whenever the slider moves, set zoomLevel and redraw
+        slider.addEventListener("input", (e) => {
+          zoomLevel = parseFloat(e.target.value);
+          applyZoom();
+        });
+
+        // keep the slider in sync when + / – buttons are clicked:
+        function updateSlider() {
+          slider.value = zoomLevel.toFixed(2);
+        }
+
+        document.getElementById("copy-btn").addEventListener("click", () => {
+          const selected = Array.from(
+            container.querySelectorAll(".box.selected")
+          );
+          if (selected.length === 0) return;
+
+          // find SW-most selected box
+          const sw = selected.reduce((best, el) => {
+            const ex = +el.dataset.x,
+              ey = +el.dataset.y;
+            const bx = +best.dataset.x,
+              by = +best.dataset.y;
+            return ey > by || (ey === by && ex < bx) ? el : best;
+          }, selected[0]);
+
+          const swX = +sw.dataset.x,
+            swY = +sw.dataset.y;
+
+          // compute each box’s offset from SW
+          const deltas = selected.map((el) => ({
+            dx: +el.dataset.x - swX,
+            dy: +el.dataset.y - swY,
+          }));
+
+          // new group’s origin — directly below SW
+          const baseX = swX,
+            baseY = swY + SIZE + GAP;
+
+          // clear old selection, then paste copies
+          clearSelection();
+          container
+            .querySelectorAll(".sel-count-label")
+            .forEach((lbl) => lbl.remove());
+          //repositionCountLabel();
+
+          deltas.forEach((delta) => {
+            createBox(baseX + delta.dx, baseY + delta.dy);
+          });
+        });
+
+        document.getElementById("delete-btn").addEventListener("click", () => {
+          // remove all selected boxes
+          container
+            .querySelectorAll(".box.selected")
+            .forEach((el) => el.remove());
+          // clear any selection state and count-label
+          clearSelection();
+        });
+
+        document.getElementById("lock-btn").addEventListener("click", () => {
+          const selected = Array.from(
+            container.querySelectorAll(".box.selected")
+          );
+          selected.forEach((box) => {
+            if (lockedBoxes.has(box)) {
+              // it’s already locked → unlock it
+              lockedBoxes.delete(box);
+              box.classList.remove("locked");
+            } else {
+              // not locked yet → lock it
+              lockedBoxes.add(box);
+              box.classList.add("locked");
+            }
+          });
+          clearSelection();
+          //console.log('Locked boxes count:', lockedBoxes.size);
+        });
+
+        // --- cookie helpers ---
+        function setCookie(name, val, days) {
+          const d = new Date();
+          d.setTime(d.getTime() + (days || 365) * 24 * 60 * 60 * 1000);
+          document.cookie =
+            name +
+            "=" +
+            encodeURIComponent(val) +
+            ";expires=" +
+            d.toUTCString() +
+            ";path=/";
+        }
+
+        function getCookie(name) {
+          return document.cookie.split("; ").reduce((r, c) => {
+            const [k, v] = c.split("=");
+            return k === name ? decodeURIComponent(v) : r;
+          }, "");
+        }
+
+        // --- tutorial toggle logic ---
+        const tut = document.getElementById("tutorial");
+        const toggle = document.getElementById("tutorial-toggle");
+
+        // initialize from cookie
+        const seen = getCookie("tutorialSeen");
+        if (!seen) {
+          // first visit → expanded
+          tut.classList.add("expanded");
+          toggle.textContent = "−";
+        } else {
+          // returning → collapsed
+          tut.classList.add("collapsed");
+          toggle.textContent = "+";
+        }
+
+        // when you click the toggle:
+        toggle.addEventListener("click", () => {
+          if (tut.classList.contains("expanded")) {
+            // collapse it
+            tut.classList.remove("expanded");
+            tut.classList.add("collapsed");
+            toggle.textContent = "+";
+            setCookie("tutorialSeen", "true", 365);
+          } else {
+            // expand it
+            tut.classList.remove("collapsed");
+            tut.classList.add("expanded");
+            toggle.textContent = "−";
+          }
+        });
+
+        document.getElementById("block-value").addEventListener("input", () => {
+          const boxVals = Array.from(container.querySelectorAll(".box"));
+          boxVals.forEach((box) => {
+            const label = box.querySelector(".box-label");
+            label.textContent = document.getElementById("block-value").value;
+          });
+          /* container.querySelectorAll(".box").forEach((el) => {
+           // el.box-label = document.getElementById("block-value").value;
+          }); */
+          /* const blockInput = document.getElementById("block-value");
+          let perBlock = parseFloat(blockInput.value);
+          if (!isNaN(perBlock) && perBlock < 1) {
+            perBlock = 1; // enforce minimum
+          }
+          blockInput.value = perBlock;  // update the actual input */
+          // re-draw labels for whatever is currently selected
+          renderClusterLabels();
+        });
+
+        // Add this where you have your other slider code
+        document.addEventListener(
+          "wheel",
+          function (e) {
+            const updatedTut = document.getElementById("tutorial");
+            console.log(updatedTut.classList.contains("visible"));
+            if (
+              updatedTut.classList.contains("expanded") &&
+              updatedTut.matches(".ui-control:hover")
+            )
+              return;
+            // Prevent default scrolling
+            e.preventDefault();
+
+            if (e.deltaY < 0) {
+              // Scrolling up - zoom in
+              zoomLevel = Math.min(2, zoomLevel + 0.1);
+              applyZoom();
+            } else {
+              // Scrolling down - zoom out
+              zoomLevel = Math.max(0.3, zoomLevel - 0.1);
+              applyZoom();
+            }
+            updateSlider();
+          },
+          { passive: false }
+        );
+      });
+    </script>
+  </body>
+</html>
