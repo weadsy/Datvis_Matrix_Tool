@@ -9,7 +9,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- interact.js v1 -->
     <script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.11/dist/interact.min.js"></script>
-
     <style>
       /* floating animation */
       @keyframes float {
@@ -97,6 +96,16 @@
           height 0.1s ease;
       }
 
+      #tutorial.ui-control:hover {
+        opacity: 1 !important;
+        pointer-events: all; /* so you can still interact with it */
+      }
+
+      #tutorial.ui-control {
+        /* this selector is more specific than #tutorial, so it wins */
+        transition: opacity 0.4s ease-in-out;
+      }
+
       /* hide full text by default */
       #tutorial-content-full {
         display: none;
@@ -133,6 +142,40 @@
       #tutorial.expanded {
         max-width: 66vw;
       }
+
+      .ui-control {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease-in-out;
+      }
+
+      .ui-control.visible {
+        opacity: 1;
+        pointer-events: all;
+        transition-delay: 0s;
+      }
+
+      .ui-control:not(.visible) {
+        transition-delay: 0s;
+      }
+
+      /* disable selection everywhere */
+      body {
+        -webkit-user-select: none; /* Chrome/Safari */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* IE10+ */
+        user-select: none; /* Standard */
+      }
+
+      /* but allow selecting/caret in inputs, textareas, etc. */
+      input,
+      textarea,
+      select {
+        -webkit-user-select: text;
+        -moz-user-select: text;
+        -ms-user-select: text;
+        user-select: text;
+      }
     </style>
   </head>
 
@@ -140,7 +183,7 @@
     class="overflow-hidden bg-gray-900 min-h-screen p-2 flex items-center justify-center"
   >
     <!-- zoom controls -->
-    <div class="absolute top-4 right-4 flex space-x-2 z-20">
+    <div class="ui-control absolute top-4 right-4 flex space-x-2 z-20">
       <button
         id="zoom-in"
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
@@ -162,7 +205,10 @@
     </div>
 
     <!-- new: vertical slider, 1rem below the buttons -->
-    <div class="absolute" style="top: 7rem; right: -2rem; z-index: 20">
+    <div
+      class="ui-control absolute"
+      style="top: 7rem; right: -2rem; z-index: 20"
+    >
       <input
         id="zoom-slider"
         type="range"
@@ -174,7 +220,7 @@
       />
     </div>
 
-    <div class="absolute top-4 left-4 flex space-x-2 z-20">
+    <div class="ui-control absolute top-4 left-4 flex space-x-2 z-20">
       <!-- bg-green-600 text-white px-3 py-1 rounded shadow hover:bg-green-500-->
       <button
         id="add-square"
@@ -202,7 +248,7 @@
       </button>
     </div>
 
-    <div id="legend" class="absolute top-16 left-4 z-20">
+    <div id="legend" class="ui-control absolute top-16 left-4 z-20">
       <div
         class="bg-gray-700 text-white px-3 py-2 rounded shadow w-30 space-y-1"
       >
@@ -230,7 +276,7 @@
     </div> -->
 
     <!-- TUTORIAL WINDOW -->
-    <div id="tutorial" class="absolute bottom-4 left-4 z-20">
+    <div id="tutorial" class="ui-control absolute bottom-4 left-4 z-20">
       <div
         id="tutorial-header"
         class="flex justify-between items-center bg-gray-700 text-white px-3 py-2 rounded-t shadow cursor-pointer"
@@ -400,6 +446,42 @@
     <!--********************** JAVASCRIPT*****************************************************-->
     <script>
       document.addEventListener("DOMContentLoaded", () => {
+        // how close to the edge (in px) before we show UI:
+        const SHOW_MARGIN = 100;
+        const HIDE_MARGIN = 150;
+
+        // grab all your controls:
+        const uiControls = document.querySelectorAll(".ui-control");
+        uiControls.forEach((el) => el.classList.add("visible"));
+
+        function updateUI(e) {
+          if (isSelecting || isDragging) return;
+          const x = e.clientX,
+            y = e.clientY;
+          const w = window.innerWidth,
+            h = window.innerHeight;
+
+          // detect if UI is already visible (all controls share .visible)
+          const uiVisible = uiControls[0].classList.contains("visible");
+
+          // pick the appropriate margin
+          const MARGIN = uiVisible ? HIDE_MARGIN : SHOW_MARGIN;
+
+          // if pointer is within MARGIN of ANY edge:
+          const nearEdge =
+            x < MARGIN || x > w - MARGIN || y < MARGIN || y > h - MARGIN;
+
+          uiControls.forEach((el) => {
+            el.classList.toggle("visible", nearEdge);
+          });
+        }
+
+        // listen once on the whole document:
+        document.addEventListener("mousemove", updateUI);
+
+        // also trigger on touch (optional):
+        document.addEventListener("touchstart", updateUI);
+
         // keep track of clusters the user has “locked” by clicking their badge
         const lockedBoxes = new Set();
 
@@ -596,6 +678,9 @@
         container.addEventListener("mousedown", (e) => {
           if (e.button !== 0 || e.target !== container) return;
 
+          // immediately hide all your UI-controls on drag start:
+          uiControls.forEach((el) => el.classList.remove("visible"));
+
           isSelecting = true;
           console.log("iselecting:", isSelecting);
           const crect = container.getBoundingClientRect();
@@ -690,7 +775,7 @@
         }
 
         // 3) draggable + group‐drag (unchanged)
-        let groupDrag = false,
+        let isDragging = false,
           selectedEls = [],
           initPos = [],
           delta = { x: 0, y: 0 };
@@ -704,6 +789,9 @@
             }),
           ],
           onstart(event) {
+            // immediately hide all your UI-controls on drag start:
+            uiControls.forEach((el) => el.classList.remove("visible"));
+            isDragging = true;
             const t = event.target;
 
             let one = false;
@@ -841,6 +929,10 @@
             });
 
             renderClusterLabels();
+          },
+          onend(event) {
+            // drag just finished
+            isDragging = false;
           },
         });
 
