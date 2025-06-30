@@ -351,7 +351,7 @@
           <input
             id="block-value"
             type="number"
-            value="1"
+            value=""
             min="0"
             class="bg-gray-800 text-white rounded px-1 text-center w-12 focus:outline-none"
           />
@@ -385,7 +385,7 @@
             • Drag to select a group of squares and see their square counts.<br />
             • With selected squares you can: drag, group (to grid), copy, lock,
             and delete.<br />
-            • Control zoom with slider bar.
+            • Control zoom with slider bar or mouse wheel.
           </p>
         </div>
 
@@ -445,8 +445,8 @@
               Zooming
             </h3>
             <p class="ml-4 py-1 text-sm leading-snug">
-              - Use the slider or the +/– buttons to zoom in and out on the
-              canvas.
+              - Use the slider bar or mouse wheel to zoom in and out on the
+              canvas. (or +/- buttons)
             </p>
           </div>
 
@@ -466,40 +466,16 @@
             </p>
           </div>
 
-          <!-- ROADMAP SECTION -->
+          <!-- LEGEND SECTION -->
           <div>
             <h3 class="text-xl underline mb-1 underline-offset-[6px]">
-              Roadmap
+              Legend
             </h3>
             <p class="ml-4 py-1 text-sm leading-snug">
-              - The site is still a WIP and will have many more updates. I am
-              planning to add multiple different scale visualization methods, as
-              well as general data visualization tooling.<br />
-              - My end goals with this project are to create a tool that allows
-              for people to easier understand large scales and data/mathmatical
-              manipulation. It should be quick and easy, yet robust and
-              engaging.
-            </p>
-          </div>
-
-          <!-- DONATION SECTION -->
-          <div>
-            <h3 class="text-xl underline mb-1 underline-offset-[6px]">
-              Donate/About
-            </h3>
-            <p class="ml-4 py-1 text-sm leading-snug">
-              - Inspiration ~ With a neverending onslaught of bad news in the
-              modern age, it can be difficult to keep up with the facts,
-              specifically, the numbers! When we hear that a 1,000 or 10,000 or
-              100,000 people died in war, how do we put these numbers into
-              perspective? Do we even have an acurrate frame of reference to
-              fully comprehend the true magnitude of these figures? Hopefully,
-              that will be the defining pupose of this tool.<br />
-              - I am a solo developer interested in automation (RPA, AI, Web)
-              and building useful tools, like this website. Please consider
-              donating if you would like to support the project and me. If this
-              site helped you at all please consider leaving a comment on my
-              Ko-fi page, or a coffee :]
+              - The legend allows you to change how much a block represents. By
+              default a single block represents 1 unit (number is hidden). This
+              can be changed by clicking the arrow buttons or entering your own
+              number. Remove the text to go back to blank squares.
             </p>
           </div>
         </div>
@@ -535,17 +511,20 @@
 
     <div class="landing-overlay" id="landingOverlay">
       <div class="landing-content">
-        <h1>Welcome to the Tool Suite</h1>
+        <h1>Welcome To Data Vis</h1>
         <p>
           This interactive workspace allows you to create, manipulate, and
-          organize visual elements. Drag to select items, use the slider to
-          zoom, and group elements together.
+          organize visual elements. Relate blocks to numbers for math based
+          block configurations. Data visualization made easy, please explore the
+          tooling options below.
         </p>
         <div class="landing-buttons">
           <button class="landing-button primary" id="scaleToolBtn">
             Scale Tool
           </button>
-          <button class="landing-button" id="matrixToolBtn">Matrix Tool</button>
+          <button class="landing-button" id="matrixToolBtn">
+            Matrix Tool (WIP)
+          </button>
         </div>
       </div>
     </div>
@@ -557,6 +536,7 @@
         const landingOverlay = document.getElementById("landingOverlay");
         const scaleToolBtn = document.getElementById("scaleToolBtn");
         const matrixToolBtn = document.getElementById("matrixToolBtn");
+        let onLandingPage = true;
 
         // Check if we've shown the landing page before
         const hasSeenLanding = localStorage.getItem("hasSeenLanding");
@@ -572,6 +552,7 @@
         scaleToolBtn.addEventListener("click", function () {
           landingOverlay.classList.add("hidden");
           localStorage.setItem("hasSeenLanding", "true");
+          onLandingPage = false;
         });
 
         // Matrix tool button (placeholder for now)
@@ -589,7 +570,7 @@
         uiControls.forEach((el) => el.classList.add("visible"));
 
         function updateUI(e) {
-          if (isSelecting || isDragging) return;
+          if (isSelecting || isDragging || onLandingPage) return;
           const x = e.clientX,
             y = e.clientY;
           const w = window.innerWidth,
@@ -614,7 +595,7 @@
         document.addEventListener("mousemove", updateUI);
 
         // also trigger on touch (optional):
-        document.addEventListener("touchstart", updateUI);
+        //document.addEventListener("touchstart", updateUI);
 
         // keep track of clusters the user has “locked” by clicking their badge
         const lockedBoxes = new Set();
@@ -1364,6 +1345,34 @@
           // re-draw labels for whatever is currently selected
           renderClusterLabels();
         });
+
+        // Add this where you have your other slider code
+        document.addEventListener(
+          "wheel",
+          function (e) {
+            const updatedTut = document.getElementById("tutorial");
+            console.log(updatedTut.classList.contains("visible"));
+            if (
+              updatedTut.classList.contains("expanded") &&
+              updatedTut.matches(".ui-control:hover")
+            )
+              return;
+            // Prevent default scrolling
+            e.preventDefault();
+
+            if (e.deltaY < 0) {
+              // Scrolling up - zoom in
+              zoomLevel = Math.min(2, zoomLevel + 0.1);
+              applyZoom();
+            } else {
+              // Scrolling down - zoom out
+              zoomLevel = Math.max(0.3, zoomLevel - 0.1);
+              applyZoom();
+            }
+            updateSlider();
+          },
+          { passive: false }
+        );
       });
     </script>
   </body>
