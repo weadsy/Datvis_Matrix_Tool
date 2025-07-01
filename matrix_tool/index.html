@@ -107,8 +107,32 @@
       .box-label {
         pointer-events: none;
         user-select: none;
-        color: white; /* or whatever fits your theme */
-        font-size: 3rem; /* adjust if you need it bigger/smaller */
+        color: white;
+        font-size: 3rem;
+      }
+
+      /* style the inner input to sit in the center */
+      .box-input {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 50%; /* adjust to taste */
+        background: transparent;
+        border: 1px solid #88f;
+        border-radius: 4px;
+        border-width: 2px;
+        color: white;
+        text-align: center;
+        font-size: 2rem;
+        outline: none;
+        pointer-events: auto; /* so you can type in it */
+      }
+
+      /* hide the border and block pointer-events when disabled */
+      .box-input.disabled {
+        border: 1px solid #888;
+        pointer-events: none !important;
       }
 
       .floating {
@@ -336,6 +360,12 @@
       >
         Lock
       </button>
+      <label
+        class="flex items-center bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600 cursor-pointer"
+      >
+        <input type="checkbox" id="edit-labels" class="mr-2 checked" />
+        Edit Labels
+      </label>
     </div>
 
     <div id="legend" class="ui-control absolute top-16 left-4 z-20">
@@ -490,7 +520,7 @@
       <!-- panel header -->
       <div class="flex items-center justify-center space-x-4 py-2">
         <div
-          class="ml-15 text-3xl text-white font-bold underline underline-offset-[6px]"
+          class="ml-3 text-3xl text-white font-bold underline underline-offset-[6px]"
         >
           Matrix Tool
         </div>
@@ -560,6 +590,7 @@
         // how close to the edge (in px) before we show UI:
         const SHOW_MARGIN = 100;
         const HIDE_MARGIN = 190;
+        document.getElementById("edit-labels").checked = true;
 
         // grab all your controls:
         const uiControls = document.querySelectorAll(".ui-control");
@@ -649,10 +680,15 @@
           box.dataset.x = startX;
           box.dataset.y = startY;
 
-          const label = document.createElement("div");
+          /* const label = document.createElement("div");
           label.className = "box-label";
           label.textContent = document.getElementById("block-value").value;
-          box.appendChild(label);
+          box.appendChild(label); */
+          const input = document.createElement("input");
+          input.type = "text"; // or "number" if you prefer
+          input.value = document.getElementById("block-value").value; // initialize it
+          input.className = "box-input";
+          box.appendChild(input);
           // random float phase
           //box.style.animationDelay = `-${Math.random()*3}s`;
           container.appendChild(box);
@@ -1369,6 +1405,19 @@
           },
           { passive: false }
         );
+
+        // grab the checkbox and all the box-inputs
+        const toggleEdit = document.getElementById("edit-labels"); // your checkbox
+        const boxInputs = document.querySelectorAll(".box-input");
+
+        //toggleEdit.dispatchEvent(new Event("change"));
+        // when the checkbox changes…
+        toggleEdit.addEventListener("change", () => {
+          const disable = !toggleEdit.checked; // disable when *not* checked
+          boxInputs.forEach((input) => {
+            input.classList.toggle("disabled", disable);
+          });
+        });
       });
     </script>
   </body>
