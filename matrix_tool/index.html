@@ -147,6 +147,10 @@
         transition: left 0.3s ease, top 0.3s ease;
       }
 
+      .transpose-transition {
+        transition: left 1s ease, top 1s ease;
+      }
+
       /* scale only the inner container */
       #container {
         transform-origin: top left;
@@ -273,6 +277,19 @@
         transition-delay: 0s;
       }
 
+      @keyframes flash {
+        0%,
+        100% {
+          background-color: #374151;
+        } /* normal color */
+        50% {
+          background-color: #526f9e;
+        } /* flash color */
+      }
+      .flash {
+        animation: flash 1s ease-in-out infinite;
+      }
+
       /* disable selection everywhere */
       body {
         -webkit-user-select: none; /* Chrome/Safari */
@@ -299,6 +316,12 @@
     <!-- zoom controls -->
     <div class="ui-control absolute top-4 right-4 flex space-x-2 z-20">
       <button
+        id="tanspose-button"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        Transpose
+      </button>
+      <button
         id="zoom-in"
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
       >
@@ -310,6 +333,7 @@
       >
         –
       </button>
+
       <button
         id="group-btn"
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
@@ -361,6 +385,7 @@
         Lock
       </button>
       <label
+        id="edit-labels-label"
         class="flex items-center bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600 cursor-pointer"
       >
         <input type="checkbox" id="edit-labels" class="mr-2 checked" />
@@ -401,7 +426,7 @@
         id="tutorial-header"
         class="flex justify-between items-center bg-gray-700 text-white px-3 py-2 rounded-t shadow cursor-pointer"
       >
-        <div class="font-bold text-lg">INFO</div>
+        <div class="font-bold text-lg">INFO (old)</div>
         <button id="tutorial-toggle" class="text-xl leading-none">−</button>
       </div>
 
@@ -590,7 +615,17 @@
         // how close to the edge (in px) before we show UI:
         const SHOW_MARGIN = 100;
         const HIDE_MARGIN = 190;
-        document.getElementById("edit-labels").checked = true;
+        const editCheckBox = document.getElementById("edit-labels");
+        editCheckBox.checked = true;
+
+        const cb = document.getElementById("edit-labels");
+        const label = document.getElementById("edit-labels-label");
+
+        label.classList.toggle("flash");
+        cb.addEventListener("change", () => {
+          // if checked, add the flash class to the label; otherwise remove it
+          label.classList.toggle("flash", cb.checked);
+        });
 
         // grab all your controls:
         const uiControls = document.querySelectorAll(".ui-control");
@@ -614,7 +649,11 @@
             x < MARGIN || x > w - MARGIN || y < MARGIN || y > h - MARGIN;
 
           uiControls.forEach((el) => {
-            el.classList.toggle("visible", nearEdge);
+            if (editCheckBox.checked) {
+              el.classList.add("visible");
+            } else {
+              el.classList.toggle("visible", nearEdge);
+            }
           });
         }
 
@@ -660,6 +699,7 @@
           lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
         }
 
+        //let numArray = [1, 2, 3, 4, 5, 6, 7, 8, 9];
         // 1) create boxes (blank)
         for (let i = 0; i < COUNT; i++) {
           const box = document.createElement("div");
@@ -673,8 +713,9 @@
             "shadow-lg",
             "cursor-move",
           ].join(" "); // 'floating'
-          const startX = 250 + i * (SIZE + 16),
-            startY = 80;
+          const cols = 3; // number of columns you want in your grid
+          const startX = 400 + (i % cols) * (SIZE + GAP);
+          const startY = 80 + Math.floor(i / cols) * (SIZE + GAP);
           box.style.left = startX + "px";
           box.style.top = startY + "px";
           box.dataset.x = startX;
@@ -686,7 +727,7 @@
           box.appendChild(label); */
           const input = document.createElement("input");
           input.type = "text"; // or "number" if you prefer
-          input.value = document.getElementById("block-value").value; // initialize it
+          input.value = i + 1; //document.getElementById("block-value").value; // initialize it
           input.className = "box-input";
           box.appendChild(input);
           // random float phase
@@ -695,6 +736,7 @@
         }
 
         // helper: create a new box at (x,y) and hook up dragging
+        let indx = COUNT;
         function createBox(x, y) {
           const box = document.createElement("div");
           box.className = [
@@ -713,14 +755,20 @@
           box.dataset.y = y;
           box.style.animationDelay = `-${Math.random() * 3}s`;
 
-          const label = document.createElement("div");
-          label.className = "box-label";
-          label.textContent = document.getElementById("block-value").value;
-          box.appendChild(label);
+          const input = document.createElement("input");
+          input.type = "text"; // or "number" if you prefer
+          input.value = indx; //document.getElementById("block-value").value; // initialize it
+          input.className = "box-input";
+
+          if (!document.getElementById("edit-labels").checked) {
+            input.classList.add("disabled");
+          }
+          box.appendChild(input);
 
           container.appendChild(box);
 
           // 3) mark it selected
+          indx += 1;
           box.classList.add("selected");
           //interact(box).draggable(dragConfig);
         }
@@ -1408,16 +1456,130 @@
 
         // grab the checkbox and all the box-inputs
         const toggleEdit = document.getElementById("edit-labels"); // your checkbox
-        const boxInputs = document.querySelectorAll(".box-input");
 
         //toggleEdit.dispatchEvent(new Event("change"));
         // when the checkbox changes…
         toggleEdit.addEventListener("change", () => {
+          const boxInputs = document.querySelectorAll(".box-input");
           const disable = !toggleEdit.checked; // disable when *not* checked
           boxInputs.forEach((input) => {
             input.classList.toggle("disabled", disable);
           });
         });
+
+        document
+          .getElementById("tanspose-button")
+          .addEventListener("click", () => {
+            const selected = Array.from(
+              container.querySelectorAll(".box.selected:not(.locked)")
+            );
+            const n = selected.length;
+            if (n === 0) return;
+
+            // 1) add the transition class
+            selected.forEach((el) => el.classList.add("transpose-transition"));
+            selected[0].offsetWidth; // reflow
+
+            // 2) Find the actual grid structure by detecting rows and columns
+            const positions = selected.map((el) => ({
+              el,
+              x: parseFloat(el.dataset.x),
+              y: parseFloat(el.dataset.y),
+            }));
+
+            // Group by rows (similar Y coordinates)
+            const tolerance = 10;
+            const rowGroups = [];
+
+            positions.forEach((pos) => {
+              let foundRow = rowGroups.find(
+                (row) => Math.abs(row[0].y - pos.y) <= tolerance
+              );
+
+              if (foundRow) {
+                foundRow.push(pos);
+              } else {
+                rowGroups.push([pos]);
+              }
+            });
+
+            // Sort rows by Y position, and within each row by X position
+            rowGroups.sort((a, b) => a[0].y - b[0].y);
+            rowGroups.forEach((row) => row.sort((a, b) => a.x - b.x));
+
+            // 3) Determine grid dimensions
+            const actualRows = rowGroups.length;
+            const maxCols = Math.max(...rowGroups.map((row) => row.length));
+
+            // 4) Create a logical grid with ghost positions
+            const grid = Array(actualRows)
+              .fill()
+              .map(() => Array(maxCols).fill(null));
+
+            // Fill the grid with actual elements
+            rowGroups.forEach((row, rowIndex) => {
+              row.forEach((pos, colIndex) => {
+                grid[rowIndex][colIndex] = pos.el;
+              });
+            });
+
+            // 5) compute the "center" of the current selection
+            const sum = selected.reduce(
+              (s, el) => ({
+                x: s.x + parseFloat(el.dataset.x),
+                y: s.y + parseFloat(el.dataset.y),
+              }),
+              { x: 0, y: 0 }
+            );
+
+            const centerX = sum.x / n;
+            const centerY = sum.y / n;
+
+            // 6) for transpose: rows become columns, columns become rows
+            const newRows = maxCols;
+            const newCols = actualRows;
+
+            // 7) figure out total pixel dimensions of the transposed grid
+            const GAP = 16;
+            const SIZE = 96;
+            const totalW = (newCols - 1) * (SIZE + GAP);
+            const totalH = (newRows - 1) * (SIZE + GAP);
+
+            // 8) pick a start-point so that the transposed grid's center sits at (centerX, centerY)
+            const startX = centerX - totalW / 2;
+            const startY = centerY - totalH / 2;
+
+            // 9) transpose the grid and position elements
+            for (let row = 0; row < actualRows; row++) {
+              for (let col = 0; col < maxCols; col++) {
+                const element = grid[row][col];
+                if (element) {
+                  // Only move actual elements (skip ghost positions)
+                  // Transpose: element at (row, col) goes to (col, row)
+                  const newRow = col;
+                  const newCol = row;
+
+                  const x = startX + newCol * (SIZE + GAP);
+                  const y = startY + newRow * (SIZE + GAP);
+
+                  element.style.left = x + "px";
+                  element.style.top = y + "px";
+                  element.dataset.x = x;
+                  element.dataset.y = y;
+                }
+              }
+            }
+
+            // 10) after the animation duration, strip the class so future drags are instant
+            setTimeout(() => {
+              selected.forEach((el) =>
+                el.classList.remove("transpose-transition")
+              );
+            }, 1000);
+
+            // 11) update the cluster labels
+            renderClusterLabels();
+          });
       });
     </script>
   </body>
