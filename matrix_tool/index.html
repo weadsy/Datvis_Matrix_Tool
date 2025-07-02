@@ -737,7 +737,7 @@
 
         // helper: create a new box at (x,y) and hook up dragging
         let indx = COUNT;
-        function createBox(x, y) {
+        function createBox(x, y, isCopy = false) {
           const box = document.createElement("div");
           box.className = [
             "box",
@@ -770,6 +770,7 @@
           // 3) mark it selected
           indx += 1;
           box.classList.add("selected");
+          //if (isCopy) box.classList.add(".inSelection");
           //interact(box).draggable(dragConfig);
         }
 
@@ -1323,7 +1324,7 @@
           //repositionCountLabel();
 
           deltas.forEach((delta) => {
-            createBox(baseX + delta.dx, baseY + delta.dy);
+            createBox(baseX + delta.dx, baseY + delta.dy, true);
           });
         });
 
@@ -1549,36 +1550,62 @@
             const startX = centerX - totalW / 2;
             const startY = centerY - totalH / 2;
 
-            // 9) transpose the grid and position elements
-            for (let row = 0; row < actualRows; row++) {
-              for (let col = 0; col < maxCols; col++) {
-                const element = grid[row][col];
-                if (element) {
-                  // Only move actual elements (skip ghost positions)
-                  // Transpose: element at (row, col) goes to (col, row)
-                  const newRow = col;
-                  const newCol = row;
+            // 9) NEW: Animate transpose column by column with space-making
+            const COLUMN_DELAY = 500; // 500ms delay between each column
 
-                  const x = startX + newCol * (SIZE + GAP);
-                  const y = startY + newRow * (SIZE + GAP);
+            container
+              .querySelectorAll(".sel-count-label")
+              .forEach((lbl) => lbl.remove());
+            for (let col = 0; col < maxCols; col++) {
+              setTimeout(() => {
+                // FIRST: Move all remaining elements down to make space
+                for (
+                  let futureCol = col + 1;
+                  futureCol < maxCols;
+                  futureCol++
+                ) {
+                  for (let row = 0; row < actualRows; row++) {
+                    const element = grid[row][futureCol];
+                    if (element) {
+                      const currentY = parseFloat(element.dataset.y);
+                      const newY = currentY + (SIZE + GAP); // Move down by one row height
 
-                  element.style.left = x + "px";
-                  element.style.top = y + "px";
-                  element.dataset.x = x;
-                  element.dataset.y = y;
+                      element.style.top = newY + "px";
+                      element.dataset.y = newY;
+                    }
+                  }
                 }
-              }
+
+                // SECOND: Move current column elements to their transposed positions
+                for (let row = 0; row < actualRows; row++) {
+                  const element = grid[row][col];
+                  if (element) {
+                    // Transpose: element at (row, col) goes to (col, row)
+                    const newRow = col;
+                    const newCol = row;
+
+                    const x = startX + newCol * (SIZE + GAP);
+                    const y = startY + newRow * (SIZE + GAP);
+
+                    element.style.left = x + "px";
+                    element.style.top = y + "px";
+                    element.dataset.x = x;
+                    element.dataset.y = y;
+                  }
+                }
+
+                // Update cluster labels after each column move
+              }, col * COLUMN_DELAY);
             }
 
-            // 10) after the animation duration, strip the class so future drags are instant
+            // 10) Remove transition class after all animations complete
+            const totalAnimationTime = maxCols * COLUMN_DELAY + 500; // +1000ms for final transition
             setTimeout(() => {
               selected.forEach((el) =>
                 el.classList.remove("transpose-transition")
               );
-            }, 1000);
-
-            // 11) update the cluster labels
-            renderClusterLabels();
+              renderClusterLabels();
+            }, totalAnimationTime);
           });
       });
     </script>
