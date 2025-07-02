@@ -1776,62 +1776,103 @@
             return;
           }
 
-          // Add transition class to matrix2 elements
-          matrix2.forEach((el) => el.classList.add("group-transition"));
-          matrix2[0].offsetWidth; // Force reflow
-
           // Remove count labels during animation
           container
             .querySelectorAll(".sel-count-label")
             .forEach((lbl) => lbl.remove());
 
-          // Animate matrix2 elements to overlap with matrix1 elements
-          grid2.forEach((row, rowIndex) => {
+          // Create a flat array of pairs for sequential animation
+          const pairs = [];
+          grid1.forEach((row, rowIndex) => {
             row.forEach((pos, colIndex) => {
-              const matrix2Element = pos.el;
-              const matrix1Element = grid1[rowIndex][colIndex].el;
-
-              // Get target position from corresponding matrix1 element
-              const targetX = parseFloat(matrix1Element.dataset.x);
-              const targetY = parseFloat(matrix1Element.dataset.y);
-
-              // Move matrix2 element to overlap matrix1 element
-              matrix2Element.style.left = targetX + "px";
-              matrix2Element.style.top = targetY + "px";
-              matrix2Element.dataset.x = targetX;
-              matrix2Element.dataset.y = targetY;
+              pairs.push({
+                left: pos.el,
+                right: grid2[rowIndex][colIndex].el,
+                leftOriginalX: parseFloat(pos.el.dataset.x),
+                leftOriginalY: parseFloat(pos.el.dataset.y),
+                rightOriginalX: parseFloat(
+                  grid2[rowIndex][colIndex].el.dataset.x
+                ),
+                rightOriginalY: parseFloat(
+                  grid2[rowIndex][colIndex].el.dataset.y
+                ),
+              });
             });
           });
 
-          // After animation completes, update the numbers and remove matrix2 elements
-          setTimeout(() => {
-            grid1.forEach((row, rowIndex) => {
-              row.forEach((pos, colIndex) => {
-                const matrix1Element = pos.el;
-                const matrix2Element = grid2[rowIndex][colIndex].el;
+          let currentPairIndex = 0;
+          const ANIMATION_DELAY = 600; // Time between each pair animation
 
+          function animateNextPair() {
+            if (currentPairIndex >= pairs.length) {
+              // All animations complete, update cluster labels
+              renderClusterLabels();
+              return;
+            }
+
+            const pair = pairs[currentPairIndex];
+            const {
+              left,
+              right,
+              leftOriginalX,
+              leftOriginalY,
+              rightOriginalX,
+              rightOriginalY,
+            } = pair;
+
+            // Add transition classes
+            left.classList.add("group-transition");
+            right.classList.add("group-transition");
+
+            // Force reflow
+            left.offsetWidth;
+
+            // Step 1: Move both blocks up by SIZE + GAP
+            const upwardY = leftOriginalY - (SIZE + GAP);
+            left.style.left = leftOriginalX + "px";
+            left.style.top = upwardY + "px";
+            left.dataset.x = leftOriginalX;
+            left.dataset.y = upwardY;
+
+            right.style.left = rightOriginalX + "px";
+            right.style.top = upwardY + "px";
+            right.dataset.x = rightOriginalX;
+            right.dataset.y = upwardY;
+
+            // Step 2: After upward movement, move right block to left block position
+            setTimeout(() => {
+              right.style.left = leftOriginalX + "px";
+              right.style.top = upwardY + "px";
+              right.dataset.x = leftOriginalX;
+              right.dataset.y = upwardY;
+
+              // Step 3: After horizontal movement, combine values and remove right block
+              // (blocks stay at the elevated position)
+              setTimeout(() => {
                 // Get input values
-                const input1 = matrix1Element.querySelector("input.box-input");
-                const input2 = matrix2Element.querySelector("input.box-input");
+                const input1 = left.querySelector("input.box-input");
+                const input2 = right.querySelector("input.box-input");
 
                 // Parse values (default to 0 if not a number)
                 const val1 = parseFloat(input1.value) || 0;
                 const val2 = parseFloat(input2.value) || 0;
 
-                // Update matrix1 with the sum
+                // Update left block with the sum
                 input1.value = val1 + val2;
 
-                // Remove matrix2 element
-                matrix2Element.remove();
-              });
-            });
+                // Remove right block and transition classes
+                right.remove();
+                left.classList.remove("group-transition");
 
-            // Remove transition classes
-            matrix1.forEach((el) => el.classList.remove("group-transition"));
+                // Move to next pair
+                currentPairIndex++;
+                animateNextPair();
+              }, 300); // Wait for horizontal movement
+            }, 300); // Wait for upward movement
+          }
 
-            // Update cluster labels
-            renderClusterLabels();
-          }, 300); // Match the CSS transition duration
+          // Start the animation sequence
+          animateNextPair();
         });
       });
     </script>
