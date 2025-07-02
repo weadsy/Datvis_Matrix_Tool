@@ -198,11 +198,11 @@
         z-index: 11;
       }
 
-      #legend {
+      /* #legend {
         border: 1px solid #888;
         border-radius: 0.5rem;
-        overflow: hidden; /* clip child corners */
-      }
+        overflow: hidden;
+      } */
       /* 1) give the tutorial window a border and rounded corners */
       #tutorial {
         border: 1px solid #888; /* or whatever color */
@@ -353,7 +353,7 @@
         min="0.2"
         max="1.5"
         step="0.01"
-        value="1"
+        value="0.6"
         class="w-32 h-2 -rotate-90 origin-center"
       />
     </div>
@@ -393,16 +393,31 @@
       </label>
     </div>
 
-    <div id="legend" class="ui-control absolute top-16 left-4 z-20">
+    <div class="ui-control absolute top-14 left-4 flex space-x-2 z-20">
+      <!-- bg-green-600 text-white px-3 py-1 rounded shadow hover:bg-green-500-->
+      <button
+        id="reset-btn"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        Reset
+      </button>
+      <button
+        id="add-btn"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        Addition
+      </button>
+    </div>
+
+    <!-- <div id="legend" class="ui-control absolute top-28 left-4 z-20">
       <div
         class="bg-gray-700 text-white px-3 py-2 rounded shadow w-30 space-y-1"
       >
         <div class="font-bold">Legend</div>
         <div class="flex items-center space-x-2">
-          <!-- mini block icon -->
           <div class="w-6 h-6 bg-gray-600 rounded border border-gray-500"></div>
           <span>=</span>
-          <!-- input for “value per block” -->
+
           <input
             id="block-value"
             type="number"
@@ -412,7 +427,7 @@
           />
         </div>
       </div>
-    </div>
+    </div> -->
 
     <!-- <div class="absolute bottom-4 left-4 z-20">
         <button id="help-btn" class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600">
@@ -426,7 +441,7 @@
         id="tutorial-header"
         class="flex justify-between items-center bg-gray-700 text-white px-3 py-2 rounded-t shadow cursor-pointer"
       >
-        <div class="font-bold text-lg">INFO (old)</div>
+        <div class="font-bold text-lg">INFO</div>
         <button id="tutorial-toggle" class="text-xl leading-none">−</button>
       </div>
 
@@ -437,9 +452,10 @@
         <!-- Minimized content -->
         <div id="tutorial-content-min" class="p-3">
           <p class="text-sm leading-snug">
-            • Drag to select a group of squares and see their square counts.<br />
-            • With selected squares you can: drag, group (to grid), copy, lock,
-            and delete.<br />
+            • Drag to select a group of squares and perform matrix
+            operations.<br />
+            • Selected squares can: drag, group, copy, lock, delete + matrix
+            ops<br />
             • Control zoom with slider bar or mouse wheel.
           </p>
         </div>
@@ -573,42 +589,73 @@
           visualized smoothly with easy to follow animations.
         </p>
         <div class="landing-buttons">
-          <button class="landing-button primary" id="scaleToolBtn">
+          <button class="landing-button primary" id="continueBtn">
             Continue
           </button>
-          <button class="landing-button" id="matrixToolBtn">Scale Tool</button>
+          <button class="landing-button" id="scaleToolBtn">Scale Tool</button>
         </div>
       </div>
     </div>
 
     <!--********************** JAVASCRIPT*****************************************************-->
     <script>
+      // Catch all uncaught errors:
+      window.onerror = function (message, source, lineno, colno, error) {
+        alert(
+          `JavaScript error:\n` +
+            `Message: ${message}\n` +
+            `Source: ${source}\n` +
+            `Line: ${lineno}, Column: ${colno}`
+        );
+        // return false to let the error also go to the console if devtools is open
+        return false;
+      };
+
       document.addEventListener("DOMContentLoaded", () => {
         // Landing overlay logic
         const landingOverlay = document.getElementById("landingOverlay");
+        const continueBtn = document.getElementById("continueBtn");
         const scaleToolBtn = document.getElementById("scaleToolBtn");
-        const matrixToolBtn = document.getElementById("matrixToolBtn");
         let onLandingPage = true;
 
+        document.getElementById("reset-btn").addEventListener("click", () => {
+          localStorage.setItem("isReset", "true");
+          window.location.reload();
+          /* // remove all selected boxes
+          container.querySelectorAll(".box").forEach((el) => el.remove());
+
+          container
+            .querySelectorAll(".sel-count-label")
+            .forEach((lbl) => lbl.remove());
+
+          lockedBoxes.clear();
+          // clear any selection state and count-label
+          COUNT = squareLength * squareLength;
+          clearSelection(); */
+        });
+
         // Check if we've shown the landing page before
-        const hasSeenLanding = localStorage.getItem("hasSeenLanding");
+        let isReset = localStorage.getItem("isReset") === "true";
 
         // If we want to always show it (or haven't seen it yet)
-        if (!hasSeenLanding) {
+        if (!isReset) {
           landingOverlay.classList.remove("hidden");
         } else {
-          //landingOverlay.classList.add("hidden");
+          landingOverlay.classList.add("hidden");
+          onLandingPage = false;
         }
 
+        localStorage.setItem("isReset", "false");
+
         // Scale tool button - hide overlay and save preference
-        scaleToolBtn.addEventListener("click", function () {
+        continueBtn.addEventListener("click", function () {
           landingOverlay.classList.add("hidden");
-          localStorage.setItem("hasSeenLanding", "true");
+
           onLandingPage = false;
         });
 
         // Matrix tool button (placeholder for now)
-        matrixToolBtn.addEventListener("click", function () {
+        scaleToolBtn.addEventListener("click", function () {
           window.location.href = "/scale_tool/";
         });
 
@@ -668,10 +715,11 @@
 
         const panel = document.getElementById("panel");
         const container = document.getElementById("container");
-        const COUNT = 9;
+        const squareLength = 3;
+        let COUNT = squareLength * squareLength;
         const SIZE = 96; // px
         const GAP = 16; // px WIP
-        let zoomLevel = 0.8;
+        let zoomLevel = 0.6;
 
         function repositionCountLabel() {
           const lbl = container.querySelector(".sel-count-label");
@@ -713,9 +761,9 @@
             "shadow-lg",
             "cursor-move",
           ].join(" "); // 'floating'
-          const cols = 3; // number of columns you want in your grid
-          const startX = 400 + (i % cols) * (SIZE + GAP);
-          const startY = 80 + Math.floor(i / cols) * (SIZE + GAP);
+          const cols = Math.sqrt(COUNT); // number of columns you want in your grid
+          const startX = 650 + (i % cols) * (SIZE + GAP);
+          const startY = 160 + Math.floor(i / cols) * (SIZE + GAP);
           box.style.left = startX + "px";
           box.style.top = startY + "px";
           box.dataset.x = startX;
@@ -737,7 +785,7 @@
 
         // helper: create a new box at (x,y) and hook up dragging
         let indx = COUNT;
-        function createBox(x, y, isCopy = false) {
+        function createBox(x, y, value) {
           const box = document.createElement("div");
           box.className = [
             "box",
@@ -757,7 +805,6 @@
 
           const input = document.createElement("input");
           input.type = "text"; // or "number" if you prefer
-          input.value = indx; //document.getElementById("block-value").value; // initialize it
           input.className = "box-input";
 
           if (!document.getElementById("edit-labels").checked) {
@@ -766,10 +813,13 @@
           box.appendChild(input);
 
           container.appendChild(box);
-
-          // 3) mark it selected
-          indx += 1;
           box.classList.add("selected");
+          if (value) {
+            input.value = value;
+          } else {
+            indx += 1;
+            input.value = indx;
+          }
           //if (isCopy) box.classList.add(".inSelection");
           //interact(box).draggable(dragConfig);
         }
@@ -862,13 +912,13 @@
             ].join(" ");
 
             // get the user’s “blocks → value” multiplier:
-            let perBlock = parseFloat(
+            /* let perBlock = parseFloat(
               document.getElementById("block-value").value
             );
             if (isNaN(perBlock) || perBlock < 1) {
               perBlock = 1; // enforce minimum
-            }
-            lbl.textContent = cluster.length * perBlock;
+            } */
+            lbl.textContent = cluster.length * 1;
 
             // position & cancel zoom
             const labelX = minX + (maxX - minX) / 2;
@@ -1185,6 +1235,15 @@
           const n = selected.length;
           if (n === 0) return;
 
+          // sort in‐place by that inner input’s value:
+          selected.sort((a, b) => {
+            const aVal =
+              parseFloat(a.querySelector("input.box-input").value) || 0;
+            const bVal =
+              parseFloat(b.querySelector("input.box-input").value) || 0;
+            return aVal - bVal;
+          });
+
           // 1) add the transition class
           selected.forEach((el) => el.classList.add("group-transition"));
 
@@ -1306,15 +1365,19 @@
           const swX = +sw.dataset.x,
             swY = +sw.dataset.y;
 
-          // compute each box’s offset from SW
-          const deltas = selected.map((el) => ({
-            dx: +el.dataset.x - swX,
-            dy: +el.dataset.y - swY,
-          }));
+          // compute each box’s offset from SW and get the input value
+          const deltas = selected.map((el) => {
+            const input = el.querySelector("input.box-input");
+            return {
+              dx: +el.dataset.x - swX,
+              dy: +el.dataset.y - swY,
+              val: input.value,
+            };
+          });
 
           // new group’s origin — directly below SW
           const baseX = swX,
-            baseY = swY + SIZE + GAP;
+            baseY = swY + SIZE / 2 + GAP;
 
           // clear old selection, then paste copies
           clearSelection();
@@ -1324,7 +1387,8 @@
           //repositionCountLabel();
 
           deltas.forEach((delta) => {
-            createBox(baseX + delta.dx, baseY + delta.dy, true);
+            //console.log(delta.val);
+            createBox(baseX + delta.dx, baseY + delta.dy, delta.val);
           });
         });
 
@@ -1359,6 +1423,7 @@
         // --- cookie helpers ---
         function setCookie(name, val, days) {
           const d = new Date();
+          //d.setTime(d.getTime() + days * 1000);
           d.setTime(d.getTime() + (days || 365) * 24 * 60 * 60 * 1000);
           document.cookie =
             name +
@@ -1399,7 +1464,7 @@
             tut.classList.remove("expanded");
             tut.classList.add("collapsed");
             toggle.textContent = "+";
-            setCookie("tutorialSeen", "true", 365);
+            setCookie("tutorialSeen", "true", 1); //1 day
           } else {
             // expand it
             tut.classList.remove("collapsed");
@@ -1408,24 +1473,24 @@
           }
         });
 
-        document.getElementById("block-value").addEventListener("input", () => {
+        /* document.getElementById("block-value").addEventListener("input", () => {
           const boxVals = Array.from(container.querySelectorAll(".box"));
           boxVals.forEach((box) => {
             const label = box.querySelector(".box-label");
             label.textContent = document.getElementById("block-value").value;
           });
-          /* container.querySelectorAll(".box").forEach((el) => {
+           container.querySelectorAll(".box").forEach((el) => {
            // el.box-label = document.getElementById("block-value").value;
-          }); */
-          /* const blockInput = document.getElementById("block-value");
+          }); 
+           const blockInput = document.getElementById("block-value");
           let perBlock = parseFloat(blockInput.value);
           if (!isNaN(perBlock) && perBlock < 1) {
             perBlock = 1; // enforce minimum
           }
-          blockInput.value = perBlock;  // update the actual input */
+          blockInput.value = perBlock;  // update the actual input 
           // re-draw labels for whatever is currently selected
           renderClusterLabels();
-        });
+        }); */
 
         // Add this where you have your other slider code
         document.addEventListener(
@@ -1607,6 +1672,167 @@
               renderClusterLabels();
             }, totalAnimationTime);
           });
+
+        document.getElementById("add-btn").addEventListener("click", () => {
+          const selected = Array.from(
+            container.querySelectorAll(".box.selected:not(.locked)")
+          );
+          const n = selected.length;
+          if (n === 0) return;
+
+          // Use the same clustering logic as renderClusterLabels to identify matrices
+          const parent = [...Array(n).keys()];
+          function find(i) {
+            return parent[i] === i ? i : (parent[i] = find(parent[i]));
+          }
+          function union(a, b) {
+            parent[find(b)] = find(a);
+          }
+
+          // Group boxes by proximity to form matrices
+          for (let i = 0; i < n; i++) {
+            const xi = +selected[i].dataset.x,
+              yi = +selected[i].dataset.y;
+            for (let j = i + 1; j < n; j++) {
+              const xj = +selected[j].dataset.x,
+                yj = +selected[j].dataset.y;
+              if (
+                Math.abs(xi - xj) <= SIZE + 20 &&
+                Math.abs(yi - yj) <= SIZE + 20
+              ) {
+                union(i, j);
+              }
+            }
+          }
+
+          // Group into clusters (matrices)
+          const groups = {};
+          for (let i = 0; i < n; i++) {
+            const r = find(i);
+            (groups[r] ||= []).push(selected[i]);
+          }
+
+          const matrices = Object.values(groups);
+
+          // Need exactly 2 matrices for addition
+          if (matrices.length !== 2) {
+            alert("Please select exactly 2 matrices for addition");
+            return;
+          }
+
+          // Sort matrices by leftmost position to determine which is first/second
+          matrices.sort((a, b) => {
+            const aMinX = Math.min(...a.map((el) => +el.dataset.x));
+            const bMinX = Math.min(...b.map((el) => +el.dataset.x));
+            return aMinX - bMinX;
+          });
+
+          const [matrix1, matrix2] = matrices;
+
+          // Check if matrices have the same dimensions
+          if (matrix1.length !== matrix2.length) {
+            alert("Matrices must have the same dimensions for addition");
+            return;
+          }
+
+          // Convert each matrix to a 2D grid structure for proper alignment
+          function matrixToGrid(matrix) {
+            const tolerance = 10;
+            const positions = matrix.map((el) => ({
+              el,
+              x: parseFloat(el.dataset.x),
+              y: parseFloat(el.dataset.y),
+            }));
+
+            // Group by rows
+            const rowGroups = [];
+            positions.forEach((pos) => {
+              let foundRow = rowGroups.find(
+                (row) => Math.abs(row[0].y - pos.y) <= tolerance
+              );
+              if (foundRow) {
+                foundRow.push(pos);
+              } else {
+                rowGroups.push([pos]);
+              }
+            });
+
+            // Sort rows by Y, and within rows by X
+            rowGroups.sort((a, b) => a[0].y - b[0].y);
+            rowGroups.forEach((row) => row.sort((a, b) => a.x - b.x));
+
+            return rowGroups;
+          }
+
+          const grid1 = matrixToGrid(matrix1);
+          const grid2 = matrixToGrid(matrix2);
+
+          // Verify same grid structure
+          if (
+            grid1.length !== grid2.length ||
+            grid1.some((row, i) => row.length !== grid2[i].length)
+          ) {
+            alert("Matrices must have the same dimensions for addition");
+            return;
+          }
+
+          // Add transition class to matrix2 elements
+          matrix2.forEach((el) => el.classList.add("group-transition"));
+          matrix2[0].offsetWidth; // Force reflow
+
+          // Remove count labels during animation
+          container
+            .querySelectorAll(".sel-count-label")
+            .forEach((lbl) => lbl.remove());
+
+          // Animate matrix2 elements to overlap with matrix1 elements
+          grid2.forEach((row, rowIndex) => {
+            row.forEach((pos, colIndex) => {
+              const matrix2Element = pos.el;
+              const matrix1Element = grid1[rowIndex][colIndex].el;
+
+              // Get target position from corresponding matrix1 element
+              const targetX = parseFloat(matrix1Element.dataset.x);
+              const targetY = parseFloat(matrix1Element.dataset.y);
+
+              // Move matrix2 element to overlap matrix1 element
+              matrix2Element.style.left = targetX + "px";
+              matrix2Element.style.top = targetY + "px";
+              matrix2Element.dataset.x = targetX;
+              matrix2Element.dataset.y = targetY;
+            });
+          });
+
+          // After animation completes, update the numbers and remove matrix2 elements
+          setTimeout(() => {
+            grid1.forEach((row, rowIndex) => {
+              row.forEach((pos, colIndex) => {
+                const matrix1Element = pos.el;
+                const matrix2Element = grid2[rowIndex][colIndex].el;
+
+                // Get input values
+                const input1 = matrix1Element.querySelector("input.box-input");
+                const input2 = matrix2Element.querySelector("input.box-input");
+
+                // Parse values (default to 0 if not a number)
+                const val1 = parseFloat(input1.value) || 0;
+                const val2 = parseFloat(input2.value) || 0;
+
+                // Update matrix1 with the sum
+                input1.value = val1 + val2;
+
+                // Remove matrix2 element
+                matrix2Element.remove();
+              });
+            });
+
+            // Remove transition classes
+            matrix1.forEach((el) => el.classList.remove("group-transition"));
+
+            // Update cluster labels
+            renderClusterLabels();
+          }, 300); // Match the CSS transition duration
+        });
       });
     </script>
   </body>
