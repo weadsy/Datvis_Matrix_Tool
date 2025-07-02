@@ -316,12 +316,18 @@
     <!-- zoom controls -->
     <div class="ui-control absolute top-4 right-4 flex space-x-2 z-20">
       <button
+        id="add-btn"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        Addition
+      </button>
+      <button
         id="tanspose-button"
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
       >
         Transpose
       </button>
-      <button
+      <!-- <button
         id="zoom-in"
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
       >
@@ -332,7 +338,7 @@
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
       >
         –
-      </button>
+      </button> -->
 
       <button
         id="group-btn"
@@ -356,6 +362,26 @@
         value="0.6"
         class="w-32 h-2 -rotate-90 origin-center"
       />
+    </div>
+    <div
+      class="ui-control absolute"
+      style="top: 12rem; right: 1rem; z-index: 20"
+    >
+      <!-- Magnifying glass icon from Heroicons -->
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="w-6 h-6 mt-2 text-gray-400"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6"
+        />
+      </svg>
     </div>
 
     <div class="ui-control absolute top-4 left-4 flex space-x-2 z-20">
@@ -400,12 +426,6 @@
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
       >
         Reset
-      </button>
-      <button
-        id="add-btn"
-        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
-      >
-        Addition
       </button>
     </div>
 
@@ -847,6 +867,38 @@
             .forEach((el) => el.classList.remove("inSelection"));
         }
 
+        function clusterBoxes(boxes, proximity = SIZE + 20) {
+          const n = boxes.length;
+          if (n === 0) return [];
+          const parent = [...Array(n).keys()];
+          function find(i) {
+            return parent[i] === i ? i : (parent[i] = find(parent[i]));
+          }
+          function union(a, b) {
+            parent[find(b)] = find(a);
+          }
+          for (let i = 0; i < n; i++) {
+            const xi = +boxes[i].dataset.x,
+              yi = +boxes[i].dataset.y;
+            for (let j = i + 1; j < n; j++) {
+              const xj = +boxes[j].dataset.x,
+                yj = +boxes[j].dataset.y;
+              if (
+                Math.abs(xi - xj) <= proximity &&
+                Math.abs(yi - yj) <= proximity
+              ) {
+                union(i, j);
+              }
+            }
+          }
+          const groups = {};
+          for (let i = 0; i < n; i++) {
+            const r = find(i);
+            (groups[r] ||= []).push(boxes[i]);
+          }
+          return Object.values(groups);
+        }
+
         function renderClusterLabels() {
           // 1) clear old labels
           container
@@ -857,7 +909,7 @@
           const els = Array.from(container.querySelectorAll(".box.selected"));
           if (!els.length) return;
 
-          // 3) union-find to cluster by proximity (≤ SIZE+20px both axes)
+          /* // 3) union-find to cluster by proximity (≤ SIZE+20px both axes)
           const n = els.length;
           const parent = [...Array(n).keys()];
           function find(i) {
@@ -887,10 +939,11 @@
           for (let i = 0; i < n; i++) {
             const r = find(i);
             (groups[r] ||= []).push(els[i]);
-          }
+          } */
+          const matrices = clusterBoxes(els);
 
           // 5) for each group, append a label
-          Object.values(groups).forEach((cluster) => {
+          matrices.forEach((cluster) => {
             // compute bounding‐box of this cluster
             const xs = cluster.map((el) => +el.dataset.x),
               ys = cluster.map((el) => +el.dataset.y);
@@ -1212,14 +1265,14 @@
           });
         }
 
-        document.getElementById("zoom-in").onclick = () => {
+        /* document.getElementById("zoom-in").onclick = () => {
           zoomLevel = Math.min(2, zoomLevel + 0.1);
           applyZoom();
         };
         document.getElementById("zoom-out").onclick = () => {
           zoomLevel = Math.max(0.3, zoomLevel - 0.1);
           applyZoom();
-        };
+        }; */
 
         // initialize on load
         applyZoom();
@@ -1520,6 +1573,91 @@
           { passive: false }
         );
 
+        // Helper to get all enabled box-inputs as an array
+        function getAllBoxInputs() {
+          return Array.from(
+            document.querySelectorAll(".box-input:not(.disabled)")
+          );
+        }
+
+        // Enable arrow key navigation between inputs
+        function enableArrowNavigation() {
+          getAllBoxInputs().forEach((input) => {
+            input.addEventListener("keydown", function (e) {
+              if (
+                !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(
+                  e.key
+                )
+              )
+                return;
+
+              // Get current box position
+              const box = input.closest(".box");
+              const x = parseFloat(box.dataset.x);
+              const y = parseFloat(box.dataset.y);
+
+              // Find the closest input in the arrow direction
+              let minDist = Infinity,
+                nextInput = null;
+              getAllBoxInputs().forEach((otherInput) => {
+                if (otherInput === input) return;
+                const otherBox = otherInput.closest(".box");
+                const ox = parseFloat(otherBox.dataset.x);
+                const oy = parseFloat(otherBox.dataset.y);
+
+                // Only consider boxes in the right direction
+                let valid = false,
+                  dist = Infinity;
+                if (
+                  e.key === "ArrowUp" &&
+                  oy < y &&
+                  Math.abs(ox - x) < SIZE / 2
+                ) {
+                  valid = true;
+                  dist = y - oy;
+                }
+                if (
+                  e.key === "ArrowDown" &&
+                  oy > y &&
+                  Math.abs(ox - x) < SIZE / 2
+                ) {
+                  valid = true;
+                  dist = oy - y;
+                }
+                if (
+                  e.key === "ArrowLeft" &&
+                  ox < x &&
+                  Math.abs(oy - y) < SIZE / 2
+                ) {
+                  valid = true;
+                  dist = x - ox;
+                }
+                if (
+                  e.key === "ArrowRight" &&
+                  ox > x &&
+                  Math.abs(oy - y) < SIZE / 2
+                ) {
+                  valid = true;
+                  dist = ox - x;
+                }
+                if (valid && dist < minDist) {
+                  minDist = dist;
+                  nextInput = otherInput;
+                }
+              });
+
+              if (nextInput) {
+                e.preventDefault();
+                nextInput.focus();
+                nextInput.select();
+              }
+            });
+          });
+        }
+
+        // Call this after boxes are created and when edit mode changes
+        enableArrowNavigation();
+
         // grab the checkbox and all the box-inputs
         const toggleEdit = document.getElementById("edit-labels"); // your checkbox
 
@@ -1531,6 +1669,11 @@
           boxInputs.forEach((input) => {
             input.classList.toggle("disabled", disable);
           });
+
+          // Re-enable navigation for newly enabled inputs
+          if (toggleEdit.checked) {
+            enableArrowNavigation();
+          }
         });
 
         document
@@ -1680,7 +1823,7 @@
           const n = selected.length;
           if (n === 0) return;
 
-          // Use the same clustering logic as renderClusterLabels to identify matrices
+          /* // Use the same clustering logic as renderClusterLabels to identify matrices
           const parent = [...Array(n).keys()];
           function find(i) {
             return parent[i] === i ? i : (parent[i] = find(parent[i]));
@@ -1710,9 +1853,10 @@
           for (let i = 0; i < n; i++) {
             const r = find(i);
             (groups[r] ||= []).push(selected[i]);
-          }
+          } */
 
-          const matrices = Object.values(groups);
+          //const matrices = Object.values(groups);
+          const matrices = clusterBoxes(selected);
 
           // Need exactly 2 matrices for addition
           if (matrices.length !== 2) {
