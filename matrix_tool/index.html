@@ -926,7 +926,7 @@
         undobtn.addEventListener("click", () => {
           //e.preventDefault();
           if (history.length <= 1) return; // Prevent undoing past the first state
-          //history.pop(); // Remove current state
+          history.pop(); // Remove current state
           setMatrixState(history[history.length - 1]);
         });
 
