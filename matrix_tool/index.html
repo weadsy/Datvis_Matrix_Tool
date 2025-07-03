@@ -452,6 +452,12 @@
       >
         Reset
       </button>
+      <button
+        id="undo-btn"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        Undo
+      </button>
     </div>
 
     <!-- <div id="legend" class="ui-control absolute top-28 left-4 z-20">
@@ -879,6 +885,51 @@
         const GAP = 16; // px WIP
         let zoomLevel = 0.6;
 
+        let history = [];
+        let isRestoring = false;
+
+        function getMatrixState() {
+          return Array.from(container.querySelectorAll(".box")).map((box) => ({
+            x: +box.dataset.x,
+            y: +box.dataset.y,
+            value: box.querySelector(".box-input").value,
+            selected: box.classList.contains("selected"),
+            locked: box.classList.contains("locked"),
+          }));
+        }
+
+        function setMatrixState(state) {
+          isRestoring = true;
+          // Remove all boxes
+          container.querySelectorAll(".box").forEach((box) => box.remove());
+          // Rebuild boxes
+          state.forEach((data) => {
+            createBox(data.x, data.y, data.value);
+            const box = container.lastChild;
+            if (data.selected) box.classList.add("selected");
+            if (data.locked) box.classList.add("locked");
+          });
+          isRestoring = false;
+          renderClusterLabels();
+        }
+
+        // Call this after every user action that changes the matrix
+        function saveHistory() {
+          if (isRestoring) return;
+          history.push(JSON.parse(JSON.stringify(getMatrixState())));
+          // Optionally limit history size
+          if (history.length > 100) history.shift();
+        }
+
+        // Undo handler
+        const undobtn = document.getElementById("undo-btn");
+        undobtn.addEventListener("click", () => {
+          //e.preventDefault();
+          if (history.length <= 1) return; // Prevent undoing past the first state
+          //history.pop(); // Remove current state
+          setMatrixState(history[history.length - 1]);
+        });
+
         function repositionCountLabel() {
           const lbl = container.querySelector(".sel-count-label");
           if (!lbl) return;
@@ -936,7 +987,10 @@
             input.type = "text"; // or "number" if you prefer
             input.value = i + 1; //document.getElementById("block-value").value; // initialize it
             input.className = "box-input";
+            input.addEventListener("change", saveHistory); //SAVE MATRIX HISTORY FOR UNDO*****************
+
             box.appendChild(input);
+            box.classList.add("selected");
             // random float phase
             //box.style.animationDelay = `-${Math.random()*3}s`;
             container.appendChild(box);
@@ -944,6 +998,7 @@
         }
         defaultMatrix();
         defaultMatrix(4 * (SIZE + GAP));
+        saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
 
         // helper: create a new box at (x,y) and hook up dragging
         let indx = COUNT;
@@ -968,6 +1023,7 @@
           const input = document.createElement("input");
           input.type = "text"; // or "number" if you prefer
           input.className = "box-input";
+          input.addEventListener("change", saveHistory); //SAVE MATRIX HISTORY FOR UNDO*****************
 
           if (!document.getElementById("edit-labels").checked) {
             input.classList.add("disabled");
@@ -1408,6 +1464,7 @@
           onend(event) {
             // drag just finished
             isDragging = false;
+            saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
           },
         });
 
@@ -1519,6 +1576,7 @@
 
           //clearSelection();
           renderClusterLabels();
+          saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
         });
 
         // 6) **ADD SQUARE** button
@@ -1550,6 +1608,7 @@
           }
 
           createBox(x, y);
+          saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
         });
 
         const slider = document.getElementById("zoom-slider");
@@ -1608,6 +1667,7 @@
             //console.log(delta.val);
             createBox(baseX + delta.dx, baseY + delta.dy, delta.val);
           });
+          saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
         });
 
         document.getElementById("delete-btn").addEventListener("click", () => {
@@ -1617,6 +1677,7 @@
             .forEach((el) => el.remove());
           // clear any selection state and count-label
           clearSelection();
+          saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
         });
 
         document.getElementById("lock-btn").addEventListener("click", () => {
@@ -1979,6 +2040,7 @@
               );
               renderClusterLabels();
             }, totalAnimationTime);
+            saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
           });
 
         document.getElementById("add-btn").addEventListener("click", () => {
@@ -2154,9 +2216,8 @@
 
           // Start the animation sequence
           animateNextPair();
+          saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
         });
-
-        // ...existing code...
 
         document
           .getElementById("multiply-btn")
@@ -2341,6 +2402,7 @@
 
                 moveMatrix(leftMatrix, rightMatrix, false);
                 renderClusterLabels();
+                saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
                 return;
               }
 
