@@ -335,6 +335,12 @@
     <!-- zoom controls -->
     <div class="ui-control absolute top-4 right-4 flex space-x-2 z-20">
       <button
+        id="det-btn"
+        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
+      >
+        Determ
+      </button>
+      <button
         id="multiply-btn"
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
       >
@@ -701,16 +707,16 @@
           localStorage.setItem("isReset", "true");
           window.location.reload();
           /* // remove all selected boxes
-          container.querySelectorAll(".box").forEach((el) => el.remove());
+            container.querySelectorAll(".box").forEach((el) => el.remove());
 
-          container
-            .querySelectorAll(".sel-count-label")
-            .forEach((lbl) => lbl.remove());
+            container
+              .querySelectorAll(".sel-count-label")
+              .forEach((lbl) => lbl.remove());
 
-          lockedBoxes.clear();
-          // clear any selection state and count-label
-          COUNT = squareLength * squareLength;
-          clearSelection(); */
+            lockedBoxes.clear();
+            // clear any selection state and count-label
+            COUNT = squareLength * squareLength;
+            clearSelection(); */
         });
 
         // Check if we've shown the landing page before
@@ -883,6 +889,7 @@
         let COUNT = squareLength * squareLength;
         const SIZE = 96; // px
         const GAP = 16; // px WIP
+        const SIZEGAP = SIZE + GAP;
         let zoomLevel = 0.6;
 
         let history = [];
@@ -956,9 +963,9 @@
           lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
         }
 
-        //let numArray = [1, 2, 3, 4, 5, 6, 7, 8, 9];
         // 1) create boxes (blank)
         function defaultMatrix(xOffset = 0) {
+          let numArray = [1, 2, 0, 1, 0, 3, 4, 1, 1];
           for (let i = 0; i < COUNT; i++) {
             const box = document.createElement("div");
             box.className = [
@@ -980,12 +987,12 @@
             box.dataset.y = startY;
 
             /* const label = document.createElement("div");
-          label.className = "box-label";
-          label.textContent = document.getElementById("block-value").value;
-          box.appendChild(label); */
+            label.className = "box-label";
+            label.textContent = document.getElementById("block-value").value;
+            box.appendChild(label); */
             const input = document.createElement("input");
             input.type = "text"; // or "number" if you prefer
-            input.value = i + 1; //document.getElementById("block-value").value; // initialize it
+            input.value = numArray[i]; //document.getElementById("block-value").value; // initialize it
             input.className = "box-input";
             input.addEventListener("change", saveHistory); //SAVE MATRIX HISTORY FOR UNDO*****************
 
@@ -996,7 +1003,7 @@
             container.appendChild(box);
           }
         }
-        defaultMatrix();
+        //defaultMatrix();
         defaultMatrix(4 * (SIZE + GAP));
         saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
 
@@ -1133,11 +1140,11 @@
 
             // get the user’s “blocks → value” multiplier:
             /* let perBlock = parseFloat(
-              document.getElementById("block-value").value
-            );
-            if (isNaN(perBlock) || perBlock < 1) {
-              perBlock = 1; // enforce minimum
-            } */
+                document.getElementById("block-value").value
+              );
+              if (isNaN(perBlock) || perBlock < 1) {
+                perBlock = 1; // enforce minimum
+              } */
             lbl.textContent = cluster.length * 1;
 
             // position & cancel zoom
@@ -1174,12 +1181,12 @@
 
           if (isAddition) {
             symbol.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-    </svg>`;
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>`;
           } else {
             symbol.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-    </svg>`;
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+      </svg>`;
           }
 
           container.appendChild(symbol);
@@ -1370,9 +1377,9 @@
             console.log("unlock length:", unlocked.length);
             console.log("one:", one);
             /* if (noSelect && (unlocked.length == 1)) {
-                        toDrag = unlocked;
-                        console.log('active');
-                    } */
+                          toDrag = unlocked;
+                          console.log('active');
+                      } */
             if (unlocked.length === rectSel.length && lockedBoxClicked) {
               console.log("unlocked active but drag changed to locked");
               clearSelection();
@@ -1405,39 +1412,39 @@
               y: parseFloat(el.dataset.y),
             }));
             /* selectedEls = Array.from(container.querySelectorAll('.box.selected'));
-                    selectedElsLocked = Array.from(container.querySelectorAll('.box.locked')); //could also use: const allLocked = Array.from(lockedBoxes);
-                    selectedElsNotLocked = Array.from(container.querySelectorAll('.box.selected:not(.locked)'));
+                      selectedElsLocked = Array.from(container.querySelectorAll('.box.locked')); //could also use: const allLocked = Array.from(lockedBoxes);
+                      selectedElsNotLocked = Array.from(container.querySelectorAll('.box.selected:not(.locked)'));
 
-                    const lockedCount = selectedEls.filter(el => lockedBoxes.has(el)).length;
-                    const totalCount = selectedEls.length;
+                      const lockedCount = selectedEls.filter(el => lockedBoxes.has(el)).length;
+                      const totalCount = selectedEls.length;
 
-                    initPos = selectedEls.map(el => ({
-                        el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
-                    }));
-                    initPosLocked = selectedElsLocked.map(el => ({
-                        el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
-                    }));
-                    initPosNotLocked = selectedElsNotLocked.map(el => ({
-                        el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
-                    }));
+                      initPos = selectedEls.map(el => ({
+                          el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
+                      }));
+                      initPosLocked = selectedElsLocked.map(el => ({
+                          el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
+                      }));
+                      initPosNotLocked = selectedElsNotLocked.map(el => ({
+                          el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
+                      }));
 
-                    const allLocked = (lockedCount === totalCount);
-                    const allUnlocked = (lockedCount === 0);
-                    const mixed = !allLocked && !allUnlocked;
+                      const allLocked = (lockedCount === totalCount);
+                      const allUnlocked = (lockedCount === 0);
+                      const mixed = !allLocked && !allUnlocked;
 
-                    // now you can branch on the three states:
-                    if (allLocked) {
-                        // only locked boxes were selected
-                        currentInit = initPosLocked;
-                    }
-                    else if (allUnlocked) {
-                        // only freshly‐selected (unlocked) boxes
-                        currentInit = initPosNotLocked;
-                    }
-                    else { //mixed
-                        // both kinds in the same drag‐select
-                        currentInit = initPos;
-                    } */
+                      // now you can branch on the three states:
+                      if (allLocked) {
+                          // only locked boxes were selected
+                          currentInit = initPosLocked;
+                      }
+                      else if (allUnlocked) {
+                          // only freshly‐selected (unlocked) boxes
+                          currentInit = initPosNotLocked;
+                      }
+                      else { //mixed
+                          // both kinds in the same drag‐select
+                          currentInit = initPos;
+                      } */
 
             delta = { x: 0, y: 0 };
             groupDrag = selectedEls.length > 1;
@@ -1488,13 +1495,13 @@
         }
 
         /* document.getElementById("zoom-in").onclick = () => {
-          zoomLevel = Math.min(2, zoomLevel + 0.1);
-          applyZoom();
-        };
-        document.getElementById("zoom-out").onclick = () => {
-          zoomLevel = Math.max(0.3, zoomLevel - 0.1);
-          applyZoom();
-        }; */
+            zoomLevel = Math.min(2, zoomLevel + 0.1);
+            applyZoom();
+          };
+          document.getElementById("zoom-out").onclick = () => {
+            zoomLevel = Math.max(0.3, zoomLevel - 0.1);
+            applyZoom();
+          }; */
 
         // initialize on load
         applyZoom();
@@ -1753,23 +1760,23 @@
         });
 
         /* document.getElementById("block-value").addEventListener("input", () => {
-          const boxVals = Array.from(container.querySelectorAll(".box"));
-          boxVals.forEach((box) => {
-            const label = box.querySelector(".box-label");
-            label.textContent = document.getElementById("block-value").value;
-          });
-           container.querySelectorAll(".box").forEach((el) => {
-           // el.box-label = document.getElementById("block-value").value;
-          }); 
-           const blockInput = document.getElementById("block-value");
-          let perBlock = parseFloat(blockInput.value);
-          if (!isNaN(perBlock) && perBlock < 1) {
-            perBlock = 1; // enforce minimum
-          }
-          blockInput.value = perBlock;  // update the actual input 
-          // re-draw labels for whatever is currently selected
-          renderClusterLabels();
-        }); */
+            const boxVals = Array.from(container.querySelectorAll(".box"));
+            boxVals.forEach((box) => {
+              const label = box.querySelector(".box-label");
+              label.textContent = document.getElementById("block-value").value;
+            });
+             container.querySelectorAll(".box").forEach((el) => {
+             // el.box-label = document.getElementById("block-value").value;
+            });
+             const blockInput = document.getElementById("block-value");
+            let perBlock = parseFloat(blockInput.value);
+            if (!isNaN(perBlock) && perBlock < 1) {
+              perBlock = 1; // enforce minimum
+            }
+            blockInput.value = perBlock;  // update the actual input
+            // re-draw labels for whatever is currently selected
+            renderClusterLabels();
+          }); */
 
         // Add this where you have your other slider code
         document.addEventListener(
@@ -2602,6 +2609,756 @@
             // Start the animation sequence
             animateNextDotProduct();
           });
+
+        let speedFactor = -0.3;
+        document.getElementById("det-btn").addEventListener("click", () => {
+          const selected = Array.from(
+            container.querySelectorAll(".box.selected:not(.locked)")
+          );
+          const n = selected.length;
+          if (n === 0) return;
+
+          const matrices = clusterBoxes(selected);
+
+          // Need exactly 1 matrix for determinant
+          if (matrices.length !== 1) {
+            alert("Please select exactly 1 matrix for determinant calculation");
+            return;
+          }
+
+          const matrix = matrices[0];
+
+          // Convert matrix to grid structure
+          function matrixToGrid(matrix) {
+            const tolerance = 10;
+            const positions = matrix.map((el) => ({
+              el,
+              x: parseFloat(el.dataset.x),
+              y: parseFloat(el.dataset.y),
+            }));
+
+            // Group by rows
+            const rowGroups = [];
+            positions.forEach((pos) => {
+              let foundRow = rowGroups.find(
+                (row) => Math.abs(row[0].y - pos.y) <= tolerance
+              );
+              if (foundRow) {
+                foundRow.push(pos);
+              } else {
+                rowGroups.push([pos]);
+              }
+            });
+
+            // Sort rows by Y, and within rows by X
+            rowGroups.sort((a, b) => a[0].y - b[0].y);
+            rowGroups.forEach((row) => row.sort((a, b) => a.x - b.x));
+
+            return rowGroups;
+          }
+
+          const grid = matrixToGrid(matrix);
+          const rows = grid.length;
+          const cols = grid[0]?.length || 0;
+
+          // Verify square matrix
+          if (rows !== cols) {
+            alert("Determinant can only be calculated for square matrices");
+            return;
+          }
+
+          // Must be at least 2x2
+          if (rows < 2) {
+            alert("Matrix must be at least 2x2 for determinant calculation");
+            return;
+          }
+
+          // Remove count labels during animation
+          container
+            .querySelectorAll(".sel-count-label")
+            .forEach((lbl) => lbl.remove());
+
+          // Helper function to create a copy of an element
+          function createCopyOfElement(originalEl, x, y) {
+            const copy = document.createElement("div");
+            copy.className = originalEl.className;
+            copy.style.left = x + "px";
+            copy.style.top = y + "px";
+            copy.dataset.x = x;
+            copy.dataset.y = y;
+
+            const originalInput = originalEl.querySelector("input.box-input");
+            const copyInput = document.createElement("input");
+            copyInput.type = "text";
+            copyInput.value = originalInput.value;
+            copyInput.className = "box-input";
+            copy.appendChild(copyInput);
+
+            container.appendChild(copy);
+            return copy;
+          }
+
+          // Helper function to move matrix down
+          function moveMatrixDown(matrixElements, distance = SIZE + GAP) {
+            matrixElements.forEach((el) => {
+              el.classList.add("group-transition");
+              const currentY = parseFloat(el.dataset.y);
+              const newY = currentY + distance;
+              el.style.top = newY + "px";
+              el.dataset.y = newY;
+            });
+
+            // Remove transition classes after animation
+            setTimeout(() => {
+              matrixElements.forEach((el) => {
+                el.classList.remove("group-transition");
+              });
+            }, 300);
+          }
+
+          // Helper function to move matrix right
+          function moveMatrixRight(
+            matrixElements,
+            distance = (cols + 1) * (SIZE + GAP)
+          ) {
+            matrixElements.forEach((el) => {
+              el.classList.add("group-transition");
+              const currentX = parseFloat(el.dataset.x);
+              const newX = currentX + distance;
+              el.style.left = newX + "px";
+              el.dataset.x = newX;
+            });
+
+            // Remove transition classes after animation
+            setTimeout(() => {
+              matrixElements.forEach((el) => {
+                el.classList.remove("group-transition");
+              });
+            }, 300);
+          }
+
+          // Find row/column with most zeros
+          function findBestRowOrColumn() {
+            let bestRow = -1,
+              bestCol = -1;
+            let maxZeros = -1;
+            let isRow = true;
+
+            // Check rows
+            for (let i = 0; i < rows; i++) {
+              let zeroCount = 0;
+              for (let j = 0; j < cols; j++) {
+                const value =
+                  parseFloat(
+                    grid[i][j].el.querySelector("input.box-input").value
+                  ) || 0;
+                if (value === 0) zeroCount++;
+              }
+              if (zeroCount > maxZeros) {
+                maxZeros = zeroCount;
+                bestRow = i;
+                isRow = true;
+              }
+            }
+
+            // Check columns
+            for (let j = 0; j < cols; j++) {
+              let zeroCount = 0;
+              for (let i = 0; i < rows; i++) {
+                const value =
+                  parseFloat(
+                    grid[i][j].el.querySelector("input.box-input").value
+                  ) || 0;
+                if (value === 0) zeroCount++;
+              }
+              if (zeroCount > maxZeros) {
+                maxZeros = zeroCount;
+                bestCol = j;
+                isRow = false;
+              }
+            }
+
+            return { isRow, index: isRow ? bestRow : bestCol };
+          }
+
+          // Get minor matrix (excluding specific row and column)
+          function getMinorMatrix(excludeRow, excludeCol) {
+            const minorElements = [];
+            for (let i = 0; i < rows; i++) {
+              if (i === excludeRow) continue;
+              for (let j = 0; j < cols; j++) {
+                if (j === excludeCol) continue;
+                minorElements.push(grid[i][j].el);
+              }
+            }
+            return minorElements;
+          }
+
+          // Fade out and remove the original 2x2 matrix elements
+          function fadeOutAndRemove(elements) {
+            elements.forEach(el => {
+              el.style.transition = "opacity 0.4s";
+              el.style.opacity = "0";
+            });
+            setTimeout(() => {
+              elements.forEach(el => el.remove());
+            }, 400); // Match the transition duration
+          }
+
+          // Calculate 2x2 determinant with animation
+          function calculate2x2Determinant(
+            matrix2x2,
+            signedElement,
+            onComplete
+          ) {
+            const grid2x2 = matrixToGrid(matrix2x2);
+
+            // Create copies of the 2x2 matrix
+            const copies = [];
+            const originalTopLeft = {
+              x: Math.min(...matrix2x2.map((el) => parseFloat(el.dataset.x))),
+              y: Math.min(...matrix2x2.map((el) => parseFloat(el.dataset.y))),
+            };
+            const originalBottomRight = {
+              x: Math.max(...matrix2x2.map((el) => parseFloat(el.dataset.x))),
+              y: Math.max(...matrix2x2.map((el) => parseFloat(el.dataset.y))),
+            };
+
+            // Move copies down
+            const copyY = originalBottomRight.y + (SIZE + GAP) * 2;
+
+            matrix2x2.forEach((el, index) => {
+              const originalX = parseFloat(el.dataset.x);
+              const originalY = parseFloat(el.dataset.y);
+              const copy = createCopyOfElement(
+                el,
+                originalX,
+                originalY
+                //copyY + (originalBottomRight.y - originalY)
+              );
+              copies.push(copy);
+              el.style.opacity = "0.3";
+            });
+
+            copies.forEach((copy) => copy.classList.add("group-transition"));
+
+            setTimeout(() => {
+              copies.forEach((copy) => {
+                const originalY = parseFloat(copy.dataset.y);
+                /* const offsetY = originalY - originalBottomRight;
+                    const newY = copyY + offsetY; */
+                const newY = copyY + (originalBottomRight.y - originalY);
+                copy.style.top = newY + "px";
+                copy.dataset.y = newY;
+              });
+
+            }, 10);
+
+
+            // Animate moving copies down
+            setTimeout(() => {
+              copies.forEach((copy) =>
+                copy.classList.remove("group-transition")
+              );
+              const copyGrid = matrixToGrid(copies);
+
+              // Get the four elements: top-left, top-right, bottom-left, bottom-right
+              const topLeft = copyGrid[0][0].el;
+              const topRight = copyGrid[0][1].el;
+              const bottomLeft = copyGrid[1][0].el;
+              const bottomRight = copyGrid[1][1].el;
+
+              // Step 1: Move bottom-right to top-left position
+              bottomRight.classList.add("group-transition");
+              const tlX = parseFloat(topLeft.dataset.x);
+              const tlY = parseFloat(topLeft.dataset.y);
+
+              bottomRight.style.left = tlX + "px";
+              bottomRight.style.top = tlY + "px";
+              bottomRight.dataset.x = tlX;
+              bottomRight.dataset.y = tlY;
+
+              setTimeout(() => {
+                // Multiply bottom-right with top-left
+                const tlInput = topLeft.querySelector("input.box-input");
+                const brInput = bottomRight.querySelector("input.box-input");
+                const tlVal = parseFloat(tlInput.value) || 0;
+                const brVal = parseFloat(brInput.value) || 0;
+                const product1 = tlVal * brVal;
+
+                // Show multiplication symbol
+                const symbolX = parseFloat(bottomRight.dataset.x) + SIZE / 2;
+                const symbolY = parseFloat(bottomRight.dataset.y);
+                createFloatingOperationSymbol(symbolX, symbolY, false, false);
+
+                tlInput.value = product1;
+                topLeft.remove();
+                bottomRight.classList.remove("group-transition");
+
+                // Step 2: Move bottom-left to top-right position
+                setTimeout(() => {
+                  bottomLeft.classList.add("group-transition");
+                  const trX = parseFloat(topRight.dataset.x);
+                  const trY = parseFloat(topRight.dataset.y);
+
+                  bottomLeft.style.left = trX + "px";
+                  bottomLeft.style.top = trY + "px";
+                  bottomLeft.dataset.x = trX;
+                  bottomLeft.dataset.y = trY;
+
+                  setTimeout(() => {
+                    // Multiply bottom-left with top-right
+                    const trInput = topRight.querySelector("input.box-input");
+                    const blInput = bottomLeft.querySelector("input.box-input");
+                    const trVal = parseFloat(trInput.value) || 0;
+                    const blVal = parseFloat(blInput.value) || 0;
+                    const product2 = trVal * blVal;
+
+                    // Show multiplication symbol
+                    const symbolX2 =
+                      parseFloat(bottomLeft.dataset.x) + SIZE / 2;
+                    const symbolY2 = parseFloat(bottomLeft.dataset.y);
+                    createFloatingOperationSymbol(
+                      symbolX2,
+                      symbolY2,
+                      false,
+                      false
+                    );
+
+                    blInput.value = product2;
+                    topRight.remove();
+                    bottomLeft.classList.remove("group-transition");
+
+                    // Step 3: Subtract (move right block into left block)
+                    setTimeout(() => {
+                      // Make product2 negative for subtraction
+                      blInput.value = -product2;
+
+                      // Move bottomLeft (right block) to bottomRight (left block) position
+                      bottomLeft.classList.add("group-transition");
+                      bottomLeft.style.left =
+                        parseFloat(bottomRight.dataset.x) + "px";
+                      bottomLeft.style.top =
+                        parseFloat(bottomRight.dataset.y) + "px";
+                      bottomLeft.dataset.x = parseFloat(bottomRight.dataset.x);
+                      bottomLeft.dataset.y = parseFloat(bottomRight.dataset.y);
+
+                      setTimeout(() => {
+                        // Perform subtraction (addition with negative)
+                        const result = -product1 + product2;
+                        const brInputFinal =
+                          bottomRight.querySelector("input.box-input");
+                        brInputFinal.value = result;
+
+                        // Show addition symbol
+                        const symbolX3 =
+                          parseFloat(bottomRight.dataset.x) + SIZE / 2;
+                        const symbolY3 =
+                          parseFloat(bottomRight.dataset.y) + SIZE;
+                        createFloatingOperationSymbol(
+                          symbolX3,
+                          symbolY3,
+                          true,
+                          true
+                        );
+
+                        bottomLeft.remove();
+                        bottomRight.classList.remove("group-transition");
+
+                        // Now multiply with the signed element (commented out for now)
+                        setTimeout(() => {
+                          const signedInput =
+                            signedElement.querySelector("input.box-input");
+                          const signedVal = parseFloat(signedInput.value) || 0;
+                          const finalResult = signedVal * result;
+
+                          // Move signed element to result position
+                          bottomRight.classList.add("group-transition");
+                          bottomRight.style.left =
+                          parseFloat(signedElement.dataset.x) + SIZEGAP + "px";
+                          bottomRight.style.top =
+                            parseFloat(signedElement.dataset.y) + "px";
+                          bottomRight.dataset.x = parseFloat(
+                            signedElement.dataset.x
+                          );
+                          bottomRight.dataset.y = parseFloat(
+                            signedElement.dataset.y
+                          );
+
+                          setTimeout(() => {
+                            // Move signed element to result position
+                            signedElement.classList.add("group-transition");
+                            signedElement.offsetWidth; // Force reflow
+
+                            setTimeout(() => {
+                              signedElement.style.left = bottomRight.style.left;
+                              signedElement.style.top = bottomRight.style.top;
+                              signedElement.dataset.x = bottomRight.dataset.x;
+                              signedElement.dataset.y = bottomRight.dataset.y;
+                            }, 10);
+                          
+
+                            setTimeout(() => {
+                              // Show multiplication symbol
+                              const symbolX4 =
+                                parseFloat(signedElement.dataset.x) + SIZE / 2;
+                              const symbolY4 = parseFloat(
+                                signedElement.dataset.y
+                              );
+                              createFloatingOperationSymbol(
+                                symbolX4,
+                                symbolY4,
+                                false,
+                                false
+                              );
+
+                              signedInput.value = finalResult;
+                              
+                              bottomRight.classList.remove("group-transition");
+                              bottomRight.remove();
+
+                              fadeOutAndRemove(matrix2x2);
+
+                              onComplete();
+                            }, 300 + 300*speedFactor);
+                          }, 300 + 300 * speedFactor);
+                        }, 300 + 300 * speedFactor);
+                        //onComplete();
+                      }, 300 + 300 * speedFactor);
+                    }, 300 + 300 * speedFactor);
+                  }, 300 + 300 * speedFactor);
+                }, 300 + 300 * speedFactor);
+              }, 300 + 300 * speedFactor);
+            }, 300 + 300 * speedFactor);
+          }
+
+          // Main determinant expansion function
+          function expandDeterminant() {
+            const { isRow, index } = findBestRowOrColumn();
+            console.log(`Expanding along ${isRow ? "row" : "column"} ${index}`);
+
+            let currentExpansionIndex = 0;
+            const expansionElements = [];
+
+            // Get elements to expand
+            if (isRow) {
+              for (let j = 0; j < cols; j++) {
+                const value =
+                  parseFloat(
+                    grid[index][j].el.querySelector("input.box-input").value
+                  ) || 0;
+                if (true /* value !== 0 */) {
+                  expansionElements.push({
+                    element: grid[index][j].el,
+                    row: index,
+                    col: j,
+                  });
+                }
+              }
+            } else {
+              for (let i = 0; i < rows; i++) {
+                const value =
+                  parseFloat(
+                    grid[i][index].el.querySelector("input.box-input").value
+                  ) || 0;
+                if (true /* value !== 0 */) {
+                  expansionElements.push({
+                    element: grid[i][index].el,
+                    row: i,
+                    col: index,
+                  });
+                }
+              }
+            }
+
+            function lowerAdjacentOpacity(excludeRow, excludeCol) {
+              // Lower opacity for the excluded row (except the signed element)
+              for (let j = 0; j < cols; j++) {
+                if (j !== excludeCol) {
+                  const element = grid[excludeRow][j].el;
+                  element.style.opacity = "0.3";
+                }
+              }
+
+              // Lower opacity for the excluded column (except the signed element)
+              for (let i = 0; i < rows; i++) {
+                if (i !== excludeRow) {
+                  const element = grid[i][excludeCol].el;
+                  element.style.opacity = "0.3";
+                }
+              }
+            }
+
+            function resetAllMatrixOpacity() {
+              for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                  const element = grid[i][j].el;
+                  element.style.opacity = "1";
+                }
+              }
+            }
+            let signedElArray = [];
+
+            function expandNextElement() {
+              if (currentExpansionIndex >= expansionElements.length) {
+                console.log("All expansions complete");
+                // Reset all matrix opacity at the end
+                resetAllMatrixOpacity();
+                return;
+              }
+
+              const expansion = expansionElements[currentExpansionIndex];
+              const { element, row, col } = expansion;
+
+              // Calculate sign based on position
+              const sign = (row + col) % 2 === 0 ? 1 : -1;
+
+              // Lower opacity for adjacent row and column (everything that wasn't copied)
+              lowerAdjacentOpacity(row, col);
+
+              // Create copy of the expansion element at original position first
+              const signedElementCopy = createCopyOfElement(
+                element,
+                parseFloat(element.dataset.x),
+                parseFloat(element.dataset.y)
+              );
+              signedElArray.push(signedElementCopy);
+
+              // Apply sign to the copy
+              const signedInput =
+                signedElementCopy.querySelector("input.box-input");
+              const originalValue = parseFloat(signedInput.value) || 0;
+              signedInput.value = sign * originalValue;
+
+              // Get minor matrix
+              const minorElements = getMinorMatrix(row, col);
+
+              // Create copies of minor matrix elements at their original positions
+              const minorCopies = [];
+              const matrixBottomY = Math.max(
+                ...matrix.map((el) => parseFloat(el.dataset.y))
+              );
+
+              minorElements.forEach((el) => {
+                const originalX = parseFloat(el.dataset.x);
+                const originalY = parseFloat(el.dataset.y);
+
+                const copy = createCopyOfElement(el, originalX, originalY);
+                minorCopies.push(copy);
+              });
+
+              // Add transition classes to all copies
+              signedElementCopy.classList.add("group-transition");
+              minorCopies.forEach((copy) =>
+                copy.classList.add("group-transition")
+              );
+
+              // Force reflow
+              signedElementCopy.offsetWidth;
+
+              // Calculate target Y position (below the main matrix)
+              
+              const targetY = matrixBottomY + SIZEGAP * 4;
+
+              // Animate signed element down
+              setTimeout(() => {
+                //signedElementCopy.style.top = targetY + "px";
+                //signedElementCopy.dataset.y = targetY;
+                minorCopies.push(signedElementCopy);
+                // Animate minor copies down, maintaining their relative positions
+                minorCopies.forEach((copy) => {
+                  const originalY = parseFloat(copy.dataset.y);
+                  const offsetY = originalY - matrixBottomY;
+                  const newY = targetY + offsetY;
+
+                  copy.style.top = newY + "px";
+                  copy.dataset.y = newY;
+                });
+                minorCopies.pop();
+
+                // Remove transition classes after animation
+                setTimeout(() => {
+                  signedElementCopy.classList.remove("group-transition");
+                  minorCopies.forEach((copy) =>
+                    copy.classList.remove("group-transition")
+                  );
+
+                  // If minor is 2x2, calculate determinant
+                  if (minorCopies.length === 4) {
+                    setTimeout(() => {
+                      calculate2x2Determinant(
+                        minorCopies,
+                        signedElementCopy,
+                        () => {
+                          // Move original matrix to the right for next expansion
+                          setTimeout(() => {
+                            const expansionElsLast = expansionElements.length - 1;
+                            if (
+                              currentExpansionIndex <
+                              expansionElsLast
+                            ) {
+                              resetAllMatrixOpacity();
+                              moveMatrixRight(matrix);
+                              setTimeout(() => {
+                                currentExpansionIndex++;
+                                expandNextElement();
+                              }, 400 + 400*speedFactor);
+                            } else {
+                              resetAllMatrixOpacity();
+                              console.log("Determinant expansion complete");
+
+                              const lastEl = signedElArray[expansionElsLast];
+                              let elcount = 0;
+                              let elSum = 0;
+
+                              // Calculate the target position for the final result
+                              const matrixTopLeft = {
+                                x: Math.min(...matrix.map(el => parseFloat(el.dataset.x))),
+                                y: Math.min(...matrix.map(el => parseFloat(el.dataset.y)))
+                              };
+                              const matrixBottomRight = {
+                                x: Math.max(...matrix.map(el => parseFloat(el.dataset.x))),
+                                y: Math.max(...matrix.map(el => parseFloat(el.dataset.y)))
+                              };
+
+                              const matrixHeight = matrixBottomRight.y - matrixTopLeft.y + SIZE;
+                              const finalResultX = matrixBottomRight.x + 3 * SIZEGAP;
+                              const finalResultY = matrixTopLeft.y + (matrixHeight / 2) - (SIZE / 2);
+
+                              // Create the determinant lines and equals sign
+                              // ...existing code...
+                              let svgArray = [];
+                              function createDeterminantVisuals() {
+                                // Left vertical line
+                                const leftLineDiv = document.createElement("div");
+                                leftLineDiv.style.position = "absolute";
+                                leftLineDiv.style.left = (matrixTopLeft.x - 40) + "px";
+                                leftLineDiv.style.top = (matrixTopLeft.y - 5) + "px";
+                                leftLineDiv.style.pointerEvents = "none";
+                                leftLineDiv.style.zIndex = "50";
+                                leftLineDiv.innerHTML = `
+                                <svg width="3" height="${matrixBottomRight.y + SIZE + 10 - (matrixTopLeft.y - 5)}" style="display:block" xmlns="http://www.w3.org/2000/svg">
+                                  <line x1="1.5" y1="0" x2="1.5" y2="${matrixBottomRight.y + SIZE + 10 - (matrixTopLeft.y - 5)}" stroke="white" stroke-width="3"/>
+                                </svg>
+                              `;
+                                container.appendChild(leftLineDiv);
+                                svgArray.push(leftLineDiv);
+
+                                // Right vertical line
+                                const rightLineDiv = document.createElement("div");
+                                rightLineDiv.style.position = "absolute";
+                                rightLineDiv.style.left = (matrixBottomRight.x + SIZE + 40) + "px";
+                                rightLineDiv.style.top = (matrixTopLeft.y - 5) + "px";
+                                rightLineDiv.style.pointerEvents = "none";
+                                rightLineDiv.style.zIndex = "50";
+                                rightLineDiv.innerHTML = `
+                                <svg width="3" height="${matrixBottomRight.y + SIZE + 10 - (matrixTopLeft.y - 5)}" style="display:block" xmlns="http://www.w3.org/2000/svg">
+                                  <line x1="1.5" y1="0" x2="1.5" y2="${matrixBottomRight.y + SIZE + 10 - (matrixTopLeft.y - 5)}" stroke="white" stroke-width="3"/>
+                                </svg>
+                              `;
+                                container.appendChild(rightLineDiv);
+                                svgArray.push(rightLineDiv);
+
+                                // Equals sign
+                                const equalsY = matrixTopLeft.y + (matrixHeight / 2);
+                                const equalsX = matrixBottomRight.x + SIZE*2 + 15;
+                                const equalsDiv = document.createElement("div");
+                                equalsDiv.style.position = "absolute";
+                                equalsDiv.style.left = equalsX + "px";
+                                equalsDiv.style.top = (equalsY - 20) + "px"; // Center the equals sign
+                                equalsDiv.style.pointerEvents = "none";
+                                equalsDiv.style.zIndex = "50";
+                                equalsDiv.innerHTML = `
+                                <svg width="40" height="32" viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M4 8h32M4 24h32"/>
+                                </svg>
+                              `;
+                                container.appendChild(equalsDiv);
+                                svgArray.push(equalsDiv);
+                              }
+
+                              signedElArray.forEach((el) => {
+                                setTimeout(() => {
+                                  el.classList.add("group-transition");
+                                  /* el.style.left = finalResultX + "px";
+                                  el.style.top = finalResultY + "px";
+                                  el.dataset.x = finalResultX;
+                                  el.dataset.y = finalResultY; */
+                                  el.style.left = lastEl.style.left;
+                                  el.style.top = lastEl.style.top;
+                                  el.dataset.x = lastEl.dataset.x;
+                                  el.dataset.y = lastEl.dataset.y;
+                                  
+
+                                  if (el !== lastEl) {
+                                    setTimeout(() => {
+                                      //el.classList.remove("group-transition");
+                                      el.remove();
+                                    }, 350);
+                                  } else {
+                                    setTimeout(() => {
+                                      //el.classList.remove("group-transition");
+                                    }, 350);
+                                  }
+                                }, 300 + 300 * speedFactor);
+
+                                let detVals = el.querySelector("input.box-input");
+                                elSum += parseFloat(detVals.value);
+                                if (elcount === expansionElsLast) {
+                                  setTimeout(() => {
+                                    detVals.value = elSum;
+
+                                    // Show floating equals symbol next to the final result
+                                    const symbolX = lastEl.dataset.x - 30;
+                                    const symbolY = lastEl.dataset.y + SIZE / 2;
+                                    createFloatingOperationSymbol(symbolX, symbolY, true, false);
+                                  }, 650);
+                                }
+                                elcount += 1;
+                              });
+                              createDeterminantVisuals();
+
+                              setTimeout(() => {
+                                //el.classList.remove("group-transition");
+                                lastEl.style.left = finalResultX + "px";
+                                lastEl.style.top = finalResultY + "px";
+                                lastEl.dataset.x = finalResultX;
+                                lastEl.dataset.y = finalResultY;
+                                setTimeout(() => {
+                                  //el.classList.remove("group-transition");
+                                  svgArray.forEach(el => el.remove());
+                                }, 5000);
+                              }, 700);
+
+                              // Clean up the SVG after some time (optional)
+                             /*  setTimeout(() => {
+                                if (deterministicSvg.parentNode) {
+                                  //deterministicSvg.remove();
+                                }
+                              }, 10000); // Remove after 10 seconds */
+                            }
+                          }, 500 + 500 * speedFactor);
+                        }
+                      );
+                    }, 500 + 500 * speedFactor);
+                  } else {
+                    // For larger matrices, would need recursive expansion
+                    console.log("Larger matrix expansion not yet implemented");
+                    currentExpansionIndex++;
+                    expandNextElement();
+                  }
+                }, 300 + 300 * speedFactor); // Wait for animation to complete
+              }, 10); // Small delay to ensure DOM updates
+            }
+
+            // Start expanding
+            expandNextElement();
+          }
+
+          // Start the determinant calculation
+          expandDeterminant();
+          saveHistory();
+        });
       });
     </script>
   </body>
