@@ -2610,7 +2610,7 @@
             animateNextDotProduct();
           });
 
-        let speedFactor = 0;
+        let speedFactor = -0.3;
         document.getElementById("det-btn").addEventListener("click", () => {
           const selected = Array.from(
             container.querySelectorAll(".box.selected:not(.locked)")
@@ -2887,8 +2887,8 @@
                 const product1 = tlVal * brVal;
 
                 // Show multiplication symbol
-                const symbolX = parseFloat(bottomRight.dataset.x) + SIZE / 2;
-                const symbolY = parseFloat(bottomRight.dataset.y);
+                const symbolX = parseFloat(bottomRight.style.left) + SIZE / 2;
+                const symbolY = parseFloat(bottomRight.style.top);
                 createFloatingOperationSymbol(symbolX, symbolY, false, false);
 
                 tlInput.value = product1;
@@ -3001,9 +3001,9 @@
                             setTimeout(() => {
                               // Show multiplication symbol
                               const symbolX4 =
-                                parseFloat(signedElement.dataset.x) + SIZE / 2;
+                                parseFloat(bottomRight.style.left) + SIZE / 2;
                               const symbolY4 = parseFloat(
-                                signedElement.dataset.y
+                                bottomRight.style.top
                               );
                               createFloatingOperationSymbol(
                                 symbolX4,
@@ -3286,8 +3286,8 @@
                                   el.dataset.y = finalResultY; */
                                   el.style.left = lastEl.style.left;
                                   el.style.top = lastEl.style.top;
-                                  el.dataset.x = lastEl.dataset.x;
-                                  el.dataset.y = lastEl.dataset.y;
+                                  el.dataset.x = parseFloat(lastEl.style.left);
+                                  el.dataset.y = parseFloat(lastEl.style.top);
                                   
 
                                   if (el !== lastEl) {
@@ -3309,8 +3309,9 @@
                                     detVals.value = elSum;
 
                                     // Show floating equals symbol next to the final result
-                                    const symbolX = lastEl.dataset.x - 30;
-                                    const symbolY = lastEl.dataset.y + SIZE / 2;
+                                    const symbolX = parseFloat(lastEl.dataset.x) + SIZE / 2;
+                                    const symbolY = parseFloat(lastEl.dataset.y);
+                                    
                                     createFloatingOperationSymbol(symbolX, symbolY, true, false);
                                   }, 650);
                                 }
@@ -3319,16 +3320,15 @@
                               createDeterminantVisuals();
 
                               setTimeout(() => {
-                                //el.classList.remove("group-transition");
                                 lastEl.style.left = finalResultX + "px";
                                 lastEl.style.top = finalResultY + "px";
                                 lastEl.dataset.x = finalResultX;
                                 lastEl.dataset.y = finalResultY;
                                 setTimeout(() => {
-                                  //el.classList.remove("group-transition");
+                                  lastEl.classList.remove("group-transition");
                                   svgArray.forEach(el => el.remove());
-                                }, 5000);
-                              }, 700);
+                                }, 3000);
+                              }, 1000);
 
                               // Clean up the SVG after some time (optional)
                              /*  setTimeout(() => {
