@@ -198,11 +198,6 @@
         z-index: 11;
       }
 
-      /* #legend {
-        border: 1px solid #888;
-        border-radius: 0.5rem;
-        overflow: hidden;
-      } */
       /* 1) give the tutorial window a border and rounded corners */
       #tutorial {
         border: 1px solid #888; /* or whatever color */
@@ -358,18 +353,6 @@
       >
         Transpose
       </button>
-      <!-- <button
-        id="zoom-in"
-        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
-      >
-        +
-      </button>
-      <button
-        id="zoom-out"
-        class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
-      >
-        –
-      </button> -->
 
       <button
         id="group-btn"
@@ -466,31 +449,6 @@
       </button>
     </div>
 
-    <!-- <div id="legend" class="ui-control absolute top-28 left-4 z-20">
-      <div
-        class="bg-gray-700 text-white px-3 py-2 rounded shadow w-30 space-y-1"
-      >
-        <div class="font-bold">Legend</div>
-        <div class="flex items-center space-x-2">
-          <div class="w-6 h-6 bg-gray-600 rounded border border-gray-500"></div>
-          <span>=</span>
-
-          <input
-            id="block-value"
-            type="number"
-            value=""
-            min="0"
-            class="bg-gray-800 text-white rounded px-1 text-center w-12 focus:outline-none"
-          />
-        </div>
-      </div>
-    </div> -->
-
-    <!-- <div class="absolute bottom-4 left-4 z-20">
-        <button id="help-btn" class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600">
-            HELP
-        </button>
-    </div> -->
 
     <!-- TUTORIAL WINDOW -->
     <div id="tutorial" class="ui-control absolute bottom-4 left-4 z-20">
@@ -686,7 +644,7 @@
     <div class="ui-control fixed left-1/2 bottom-8 transform -translate-x-1/2 z-20 flex flex-col items-center"
       style="width: 320px;">
       <label for="speed-slider" class="text-white mb-1 text-sm">Animation Speed</label>
-      <input id="speed-slider" type="range" min="-0.7" max="0.7" step="0.1" value="0" class="w-full h-2" />
+      <input id="speed-slider" type="range" min="-0.7" max="0.7" step="0.01" value="0" class="w-full h-2" />
       <div class="flex justify-between w-full text-xs text-gray-300 mt-1">
         <span>Slower</span>
         <span>Faster</span>
@@ -717,17 +675,6 @@
         document.getElementById("reset-btn").addEventListener("click", () => {
           localStorage.setItem("isReset", "true");
           window.location.reload();
-          /* // remove all selected boxes
-            container.querySelectorAll(".box").forEach((el) => el.remove());
-
-            container
-              .querySelectorAll(".sel-count-label")
-              .forEach((lbl) => lbl.remove());
-
-            lockedBoxes.clear();
-            // clear any selection state and count-label
-            COUNT = squareLength * squareLength;
-            clearSelection(); */
         });
 
         // Check if we've shown the landing page before
@@ -997,10 +944,6 @@
             box.dataset.x = startX;
             box.dataset.y = startY;
 
-            /* const label = document.createElement("div");
-            label.className = "box-label";
-            label.textContent = document.getElementById("block-value").value;
-            box.appendChild(label); */
             const input = document.createElement("input");
             input.type = "text"; // or "number" if you prefer
             input.value = numArray[i]; //document.getElementById("block-value").value; // initialize it
@@ -1149,13 +1092,6 @@
               "z-20",
             ].join(" ");
 
-            // get the user’s “blocks → value” multiplier:
-            /* let perBlock = parseFloat(
-                document.getElementById("block-value").value
-              );
-              if (isNaN(perBlock) || perBlock < 1) {
-                perBlock = 1; // enforce minimum
-              } */
             lbl.textContent = cluster.length * 1;
 
             // position & cancel zoom
@@ -1422,40 +1358,7 @@
               x: parseFloat(el.dataset.x),
               y: parseFloat(el.dataset.y),
             }));
-            /* selectedEls = Array.from(container.querySelectorAll('.box.selected'));
-                      selectedElsLocked = Array.from(container.querySelectorAll('.box.locked')); //could also use: const allLocked = Array.from(lockedBoxes);
-                      selectedElsNotLocked = Array.from(container.querySelectorAll('.box.selected:not(.locked)'));
-
-                      const lockedCount = selectedEls.filter(el => lockedBoxes.has(el)).length;
-                      const totalCount = selectedEls.length;
-
-                      initPos = selectedEls.map(el => ({
-                          el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
-                      }));
-                      initPosLocked = selectedElsLocked.map(el => ({
-                          el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
-                      }));
-                      initPosNotLocked = selectedElsNotLocked.map(el => ({
-                          el, x: parseFloat(el.dataset.x), y: parseFloat(el.dataset.y)
-                      }));
-
-                      const allLocked = (lockedCount === totalCount);
-                      const allUnlocked = (lockedCount === 0);
-                      const mixed = !allLocked && !allUnlocked;
-
-                      // now you can branch on the three states:
-                      if (allLocked) {
-                          // only locked boxes were selected
-                          currentInit = initPosLocked;
-                      }
-                      else if (allUnlocked) {
-                          // only freshly‐selected (unlocked) boxes
-                          currentInit = initPosNotLocked;
-                      }
-                      else { //mixed
-                          // both kinds in the same drag‐select
-                          currentInit = initPos;
-                      } */
+            
 
             delta = { x: 0, y: 0 };
             groupDrag = selectedEls.length > 1;
@@ -1504,15 +1407,6 @@
             lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
           });
         }
-
-        /* document.getElementById("zoom-in").onclick = () => {
-            zoomLevel = Math.min(2, zoomLevel + 0.1);
-            applyZoom();
-          };
-          document.getElementById("zoom-out").onclick = () => {
-            zoomLevel = Math.max(0.3, zoomLevel - 0.1);
-            applyZoom();
-          }; */
 
         // initialize on load
         applyZoom();
@@ -1769,25 +1663,6 @@
             toggle.textContent = "−";
           }
         });
-
-        /* document.getElementById("block-value").addEventListener("input", () => {
-            const boxVals = Array.from(container.querySelectorAll(".box"));
-            boxVals.forEach((box) => {
-              const label = box.querySelector(".box-label");
-              label.textContent = document.getElementById("block-value").value;
-            });
-             container.querySelectorAll(".box").forEach((el) => {
-             // el.box-label = document.getElementById("block-value").value;
-            });
-             const blockInput = document.getElementById("block-value");
-            let perBlock = parseFloat(blockInput.value);
-            if (!isNaN(perBlock) && perBlock < 1) {
-              perBlock = 1; // enforce minimum
-            }
-            blockInput.value = perBlock;  // update the actual input
-            // re-draw labels for whatever is currently selected
-            renderClusterLabels();
-          }); */
 
         // Add this where you have your other slider code
         document.addEventListener(
@@ -2047,7 +1922,7 @@
                 }
 
                 // Update cluster labels after each column move
-              }, col * COLUMN_DELAY);
+              }, col * COLUMN_DELAY + col * COLUMN_DELAY * speedFactor);
             }
 
             // 10) Remove transition class after all animations complete
@@ -2057,7 +1932,7 @@
                 el.classList.remove("transpose-transition")
               );
               renderClusterLabels();
-            }, totalAnimationTime);
+            }, totalAnimationTime + totalAnimationTime * speedFactor);
             saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
           });
 
@@ -2157,7 +2032,7 @@
           });
 
           let currentPairIndex = 0;
-          const ANIMATION_DELAY = 600; // Time between each pair animation
+          //const ANIMATION_DELAY = 600; // Time between each pair animation
 
           function animateNextPair() {
             if (currentPairIndex >= pairs.length) {
@@ -2228,8 +2103,8 @@
                 // Move to next pair
                 currentPairIndex++;
                 animateNextPair();
-              }, 300); // Wait for horizontal movement
-            }, 300); // Wait for upward movement
+              }, 300 + 300 * speedFactor); // Wait for horizontal movement
+            }, 300 + 300 * speedFactor); // Wait for upward movement
           }
 
           // Start the animation sequence
@@ -2443,7 +2318,7 @@
                 currentResultRow++;
                 currentResultCol = 0;
                 console.log("NEXT ROW");
-                setTimeout(animateNextDotProduct, 400);
+                setTimeout(animateNextDotProduct, 400 + 400 * speedFactor);
                 return;
               }
 
@@ -2551,8 +2426,8 @@
                     // Move to next multiplication
                     elementPairIndex++;
                     setTimeout(animateNextMultiplication, 300);
-                  }, 300);
-                }, 300);
+                  }, 300 + 300 * speedFactor);
+                }, 300 + 300 * speedFactor);
               }
 
               function combineMultiplicationResults() {
@@ -2606,10 +2481,10 @@
                       // If this was the last element, move to next dot product
                       if (index === multiplicationResults.length - 1) {
                         currentResultCol++;
-                        setTimeout(animateNextDotProduct, 300);
+                        setTimeout(animateNextDotProduct, 300 + 300 * speedFactor);
                       }
-                    }, 300);
-                  }, index * 100); // Stagger the movement slightly
+                    }, 300 + 300 * speedFactor);
+                  }, index * 100 + index * 100 * speedFactor); // Stagger the movement slightly
                 });
               }
 
@@ -2630,7 +2505,18 @@
 
           // Listen for slider changes
           speedSlider.addEventListener("input", (e) => {
-            speedFactor = parseFloat(e.target.value)*-1;
+            speedFactor = parseFloat(e.target.value) * -1;
+
+            // Find the stylesheet (assumes your style is in the first stylesheet)
+            const sheet = document.styleSheets[0];
+            for (let rule of sheet.cssRules) {
+              if (rule.selectorText === '.group-transition') {
+                rule.style.transition = `left ${0.3 + 0.3*speedFactor}s ease, top ${0.3 + 0.3 * speedFactor}s ease`;
+              }
+              if (rule.selectorText === '.transpose-transition') {
+                rule.style.transition = `left ${1 + 1 * speedFactor}s ease, top ${1 + 1 * speedFactor}s ease`;
+              }
+            }
           });
         }
         
@@ -3303,10 +3189,7 @@
                               signedElArray.forEach((el) => {
                                 setTimeout(() => {
                                   el.classList.add("group-transition");
-                                  /* el.style.left = finalResultX + "px";
-                                  el.style.top = finalResultY + "px";
-                                  el.dataset.x = finalResultX;
-                                  el.dataset.y = finalResultY; */
+ 
                                   el.style.left = lastEl.style.left;
                                   el.style.top = lastEl.style.top;
                                   el.dataset.x = parseFloat(lastEl.style.left);
@@ -3351,14 +3234,8 @@
                                   lastEl.classList.remove("group-transition");
                                   svgArray.forEach(el => el.remove());
                                 }, 3000);
-                              }, 1000);
+                              }, 1000 + 1000*speedFactor);
 
-                              // Clean up the SVG after some time (optional)
-                             /*  setTimeout(() => {
-                                if (deterministicSvg.parentNode) {
-                                  //deterministicSvg.remove();
-                                }
-                              }, 10000); // Remove after 10 seconds */
                             }
                           }, 500 + 500 * speedFactor);
                         }
