@@ -117,6 +117,7 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
+        height: 3.2rem;
         width: 50%; /* adjust to taste */
         background: transparent;
         border: 1px solid #88f;
@@ -329,6 +330,9 @@
   >
     <!-- zoom controls -->
     <div class="ui-control absolute top-4 right-4 flex space-x-2 z-20">
+      <button id="rref-btn" class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600">
+        RREF
+      </button>
       <button
         id="det-btn"
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
@@ -447,6 +451,10 @@
       >
         Undo
       </button>
+      <!-- <button id="step-toggle" class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600">
+        Step Mode
+      </button> -->
+      
     </div>
 
 
@@ -664,6 +672,15 @@
         // return false to let the error also go to the console if devtools is open
         return false;
       };
+
+      window.onunhandledrejection = function (event) {
+          alert(
+            `Unhandled Promise rejection:\n` +
+            `Reason: ${event.reason}\n`
+          );
+          // Optionally: return false to let it go to the console too
+          //return false;
+        };
 
       document.addEventListener("DOMContentLoaded", () => {
         // Landing overlay logic
@@ -921,10 +938,36 @@
           lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
         }
 
+        function adjustBoxInput(input, defaultLength = 2) {
+          const extra = Math.max(0, input.value.length - defaultLength);
+          // Base width and font size
+          let width = 50; // percent
+          let fontSize = 2; // rem
+          let fontOffset = 3;
+
+          if (extra > 0) {
+            let hasDec = input.value.includes('.');
+            let hasNeg = (input.value.charAt(0) === '-');
+            //if (input.value.charAt(0) === '-') isNeg = 3;
+            if (!hasDec && !hasNeg) { 
+              fontOffset = 0;
+            }
+            width += extra * (10 - fontOffset);
+            fontSize -= extra * 0.2;
+            fontSize = Math.max(fontSize, 1); // Prevent too small
+          }
+
+          input.style.width = width + "%";
+          input.style.fontSize = fontSize + "rem";
+        }
+
         // 1) create boxes (blank)
-        function defaultMatrix(xOffset = 0) {
-          let numArray = [1, 2, 0, 1, 0, 3, 4, 1, 1];
-          for (let i = 0; i < COUNT; i++) {
+        function defaultMatrix(
+          matrixNum = 1,
+          numArray = [1, 2, 0, 1, 0, 3, 4, 1, 1]
+        ) {
+          xOffset = 4 * SIZEGAP * matrixNum;
+          for (let i = 0; i < numArray.length; i++) {
             const box = document.createElement("div");
             box.className = [
               "box",
@@ -936,7 +979,7 @@
               "shadow-lg",
               "cursor-move",
             ].join(" "); // 'floating'
-            const cols = Math.sqrt(COUNT); // number of columns you want in your grid
+            const cols = Math.sqrt(numArray.length); // number of columns you want in your grid
             const startX = xOffset + 650 + (i % cols) * (SIZE + GAP);
             const startY = 250 + Math.floor(i / cols) * (SIZE + GAP);
             box.style.left = startX + "px";
@@ -949,7 +992,8 @@
             input.value = numArray[i]; //document.getElementById("block-value").value; // initialize it
             input.className = "box-input";
             input.addEventListener("change", saveHistory); //SAVE MATRIX HISTORY FOR UNDO*****************
-
+            input.addEventListener("change", () => adjustBoxInput(input));
+            
             box.appendChild(input);
             box.classList.add("selected");
             // random float phase
@@ -958,7 +1002,7 @@
           }
         }
         //defaultMatrix();
-        defaultMatrix(4 * (SIZE + GAP));
+        defaultMatrix(1);
         saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
 
         // helper: create a new box at (x,y) and hook up dragging
@@ -985,6 +1029,7 @@
           input.type = "text"; // or "number" if you prefer
           input.className = "box-input";
           input.addEventListener("change", saveHistory); //SAVE MATRIX HISTORY FOR UNDO*****************
+          input.addEventListener("change", () => adjustBoxInput(input));
 
           if (!document.getElementById("edit-labels").checked) {
             input.classList.add("disabled");
@@ -997,10 +1042,14 @@
             input.value = value;
           } else {
             indx += 1;
-            input.value = indx;
+            input.value = 0;
           }
+          adjustBoxInput(input);
+
           //if (isCopy) box.classList.add(".inSelection");
           //interact(box).draggable(dragConfig);
+
+          return box;
         }
 
         // 2) selection‐rectangle (scaled!)
@@ -1167,7 +1216,7 @@
           uiControls.forEach((el) => el.classList.remove("visible"));
 
           isSelecting = true;
-          console.log("iselecting:", isSelecting);
+          //console.log("iselecting:", isSelecting);
           const crect = container.getBoundingClientRect();
 
           // ↓ Adjust start to container‐local, unscaled coords
@@ -1241,7 +1290,7 @@
           lockArray = Array.from(
             container.querySelectorAll(".box.locked.inSelection")
           );
-          console.log("length:", lockArray.length, " size:", lockedBoxes.size);
+          //console.log("length:", lockArray.length, " size:", lockedBoxes.size);
 
           if (lockArray.length != lockedBoxes.size) {
             lockArray.forEach((el) => {
@@ -1304,7 +1353,7 @@
               container.querySelectorAll(".box.inSelection")
             );
 
-            console.log("rectSel length:", rectSel.length);
+            //console.log("rectSel length:", rectSel.length);
             //let noSelect = false;
             if (rectSel.length == 0) {
               rectSel = Array.from(container.querySelectorAll(".box.selected"));
@@ -1321,34 +1370,34 @@
 
             // 3) Decide which group to actually drag:
             let toDrag;
-            console.log("unlock length:", unlocked.length);
-            console.log("one:", one);
+            //console.log("unlock length:", unlocked.length);
+            //console.log("one:", one);
             /* if (noSelect && (unlocked.length == 1)) {
                           toDrag = unlocked;
-                          console.log('active');
+                          //console.log('active');
                       } */
             if (unlocked.length === rectSel.length && lockedBoxClicked) {
-              console.log("unlocked active but drag changed to locked");
+              //console.log("unlocked active but drag changed to locked");
               clearSelection();
               //t.classList.add('selected');
               toDrag = Array.from(container.querySelectorAll(".box.locked"));
             } else if (one) {
               toDrag = unlocked;
-              console.log("one active");
+              //console.log("one active");
             } else if (lockDrag) {
               toDrag = locked;
-              console.log("lockdrag active");
+              //console.log("lockdrag active");
             } else if (locked.length === rectSel.length) {
               // you dragged *only* locked boxes
               toDrag = locked;
-              console.log("locked active");
+              //console.log("locked active");
             } else if (unlocked.length === rectSel.length) {
               // you dragged *only* unlocked (freshly selected) boxes
-              console.log("unlocked active");
+              //console.log("unlocked active");
               toDrag = unlocked;
             } else {
               // mixed → drag everything you hit
-              console.log("mixed/all active");
+              //console.log("mixed/all active");
               toDrag = rectSel;
             }
 
@@ -1362,7 +1411,7 @@
 
             delta = { x: 0, y: 0 };
             groupDrag = selectedEls.length > 1;
-            console.log("");
+            //console.log("");
             //groupDrag = true;
           },
           onmove(event) {
@@ -1576,7 +1625,7 @@
           //repositionCountLabel();
 
           deltas.forEach((delta) => {
-            //console.log(delta.val);
+            ////console.log(delta.val);
             createBox(baseX + delta.dx, baseY + delta.dy, delta.val);
           });
           saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
@@ -1608,7 +1657,7 @@
             }
           });
           clearSelection();
-          //console.log('Locked boxes count:', lockedBoxes.size);
+          ////console.log('Locked boxes count:', lockedBoxes.size);
         });
 
         // --- cookie helpers ---
@@ -1669,7 +1718,7 @@
           "wheel",
           function (e) {
             const updatedTut = document.getElementById("tutorial");
-            console.log(updatedTut.classList.contains("visible"));
+            //console.log(updatedTut.classList.contains("visible"));
             if (
               updatedTut.classList.contains("expanded") &&
               updatedTut.matches(".ui-control:hover")
@@ -1794,6 +1843,34 @@
             enableArrowNavigation();
           }
         });
+
+        function matrixToGrid(matrix) {
+          const tolerance = 10;
+          const positions = matrix.map((el) => ({
+            el,
+            x: parseFloat(el.dataset.x),
+            y: parseFloat(el.dataset.y),
+          }));
+
+          // Group by rows
+          const rowGroups = [];
+          positions.forEach((pos) => {
+            let foundRow = rowGroups.find(
+              (row) => Math.abs(row[0].y - pos.y) <= tolerance
+            );
+            if (foundRow) {
+              foundRow.push(pos);
+            } else {
+              rowGroups.push([pos]);
+            }
+          });
+
+          // Sort rows by Y, and within rows by X
+          rowGroups.sort((a, b) => a[0].y - b[0].y);
+          rowGroups.forEach((row) => row.sort((a, b) => a.x - b.x));
+
+          return rowGroups;
+        }
 
         document
           .getElementById("tanspose-button")
@@ -1967,33 +2044,7 @@
           }
 
           // Convert each matrix to a 2D grid structure for proper alignment
-          function matrixToGrid(matrix) {
-            const tolerance = 10;
-            const positions = matrix.map((el) => ({
-              el,
-              x: parseFloat(el.dataset.x),
-              y: parseFloat(el.dataset.y),
-            }));
-
-            // Group by rows
-            const rowGroups = [];
-            positions.forEach((pos) => {
-              let foundRow = rowGroups.find(
-                (row) => Math.abs(row[0].y - pos.y) <= tolerance
-              );
-              if (foundRow) {
-                foundRow.push(pos);
-              } else {
-                rowGroups.push([pos]);
-              }
-            });
-
-            // Sort rows by Y, and within rows by X
-            rowGroups.sort((a, b) => a[0].y - b[0].y);
-            rowGroups.forEach((row) => row.sort((a, b) => a.x - b.x));
-
-            return rowGroups;
-          }
+          
 
           const grid1 = matrixToGrid(matrix1);
           const grid2 = matrixToGrid(matrix2);
@@ -2090,7 +2141,8 @@
 
                 // Update left block with the sum
                 input1.value = val1 + val2;
-
+                
+                adjustBoxInput(input1);
                 // Show floating addition symbol
                 const symbolX = parseFloat(left.dataset.x) + SIZE / 2;
                 const symbolY = parseFloat(left.dataset.y) + SIZE;
@@ -2111,6 +2163,27 @@
           animateNextPair();
           saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
         });
+
+        // Helper function to create a copy of an element
+        function createCopyOfElement(originalEl, x, y) {
+          const copy = document.createElement("div");
+          copy.className = originalEl.className;
+          copy.style.left = x + "px";
+          copy.style.top = y + "px";
+          copy.dataset.x = x;
+          copy.dataset.y = y;
+
+          const originalInput = originalEl.querySelector("input.box-input");
+          const copyInput = document.createElement("input");
+          copyInput.type = "text";
+          copyInput.value = originalInput.value;
+          adjustBoxInput(copyInput);
+          copyInput.className = "box-input";
+          copy.appendChild(copyInput);
+
+          container.appendChild(copy);
+          return copy;
+        }
 
         document
           .getElementById("multiply-btn")
@@ -2138,35 +2211,6 @@
 
             const [leftMatrix, rightMatrix] = matrices;
 
-            // Convert each matrix to a 2D grid structure for proper alignment
-            function matrixToGrid(matrix) {
-              const tolerance = 10;
-              const positions = matrix.map((el) => ({
-                el,
-                x: parseFloat(el.dataset.x),
-                y: parseFloat(el.dataset.y),
-              }));
-
-              // Group by rows
-              const rowGroups = [];
-              positions.forEach((pos) => {
-                let foundRow = rowGroups.find(
-                  (row) => Math.abs(row[0].y - pos.y) <= tolerance
-                );
-                if (foundRow) {
-                  foundRow.push(pos);
-                } else {
-                  rowGroups.push([pos]);
-                }
-              });
-
-              // Sort rows by Y, and within rows by X
-              rowGroups.sort((a, b) => a[0].y - b[0].y);
-              rowGroups.forEach((row) => row.sort((a, b) => a.x - b.x));
-
-              return rowGroups;
-            }
-
             const leftGrid = matrixToGrid(leftMatrix);
             const rightGrid = matrixToGrid(rightMatrix);
 
@@ -2188,25 +2232,7 @@
               .querySelectorAll(".sel-count-label")
               .forEach((lbl) => lbl.remove());
 
-            // Helper function to create a copy of an element
-            function createCopyOfElement(originalEl, x, y) {
-              const copy = document.createElement("div");
-              copy.className = originalEl.className;
-              copy.style.left = x + "px";
-              copy.style.top = y + "px";
-              copy.dataset.x = x;
-              copy.dataset.y = y;
-
-              const originalInput = originalEl.querySelector("input.box-input");
-              const copyInput = document.createElement("input");
-              copyInput.type = "text";
-              copyInput.value = originalInput.value;
-              copyInput.className = "box-input";
-              copy.appendChild(copyInput);
-
-              container.appendChild(copy);
-              return copy;
-            }
+            
 
             // Helper function to reset opacity for a column
             function resetColumnOpacity(colIndex) {
@@ -2317,7 +2343,7 @@
                 // Move to next row
                 currentResultRow++;
                 currentResultCol = 0;
-                console.log("NEXT ROW");
+                //console.log("NEXT ROW");
                 setTimeout(animateNextDotProduct, 400 + 400 * speedFactor);
                 return;
               }
@@ -2343,17 +2369,17 @@
                   // All multiplications for this dot product are done
                   // Now combine the results into one final block
                   combineMultiplicationResults();
-                  console.log("COMBINE");
+                  //console.log("COMBINE");
                   return;
                 }
 
                 const leftElement =
                   leftGrid[currentResultRow][elementPairIndex].el;
-                console.log("left:", currentResultRow, elementPairIndex);
+                //console.log("left:", currentResultRow, elementPairIndex);
                 const rightElement =
                   rightGrid[elementPairIndex][currentResultCol].el;
-                console.log("right:", elementPairIndex, currentResultCol);
-                console.log(" ");
+                //console.log("right:", elementPairIndex, currentResultCol);
+                //console.log(" ");
 
                 // Create copies of both elements
                 const leftCopy = createCopyOfElement(
@@ -2401,6 +2427,7 @@
 
                     // Update left copy with the product and position it for intermediate result
                     leftInput.value = product;
+                    adjustBoxInput(leftInput);
 
                     // Show floating multiplication symbol
                     const symbolX = parseFloat(leftCopy.dataset.x) + SIZE / 2;
@@ -2458,6 +2485,7 @@
                         // First element becomes the final result
                         const input = resultEl.querySelector("input.box-input");
                         input.value = finalSum;
+                        adjustBoxInput(input);
 
                         // Show floating addition symbol when combining results (only if more than 1 result)
                         if (multiplicationResults.length > 1) {
@@ -2537,43 +2565,18 @@
 
           const matrix = matrices[0];
 
-          // Convert matrix to grid structure
-          function matrixToGrid(matrix) {
-            const tolerance = 10;
-            const positions = matrix.map((el) => ({
-              el,
-              x: parseFloat(el.dataset.x),
-              y: parseFloat(el.dataset.y),
-            }));
-
-            // Group by rows
-            const rowGroups = [];
-            positions.forEach((pos) => {
-              let foundRow = rowGroups.find(
-                (row) => Math.abs(row[0].y - pos.y) <= tolerance
-              );
-              if (foundRow) {
-                foundRow.push(pos);
-              } else {
-                rowGroups.push([pos]);
-              }
-            });
-
-            // Sort rows by Y, and within rows by X
-            rowGroups.sort((a, b) => a[0].y - b[0].y);
-            rowGroups.forEach((row) => row.sort((a, b) => a.x - b.x));
-
-            return rowGroups;
-          }
-
           const grid = matrixToGrid(matrix);
           const rows = grid.length;
           const cols = grid[0]?.length || 0;
+          let is2x2 = false;
 
           // Verify square matrix
           if (rows !== cols) {
             alert("Determinant can only be calculated for square matrices");
             return;
+
+          } else {
+            if (rows === 2) is2x2 = true;
           }
 
           // Must be at least 2x2
@@ -2586,26 +2589,6 @@
           container
             .querySelectorAll(".sel-count-label")
             .forEach((lbl) => lbl.remove());
-
-          // Helper function to create a copy of an element
-          function createCopyOfElement(originalEl, x, y) {
-            const copy = document.createElement("div");
-            copy.className = originalEl.className;
-            copy.style.left = x + "px";
-            copy.style.top = y + "px";
-            copy.dataset.x = x;
-            copy.dataset.y = y;
-
-            const originalInput = originalEl.querySelector("input.box-input");
-            const copyInput = document.createElement("input");
-            copyInput.type = "text";
-            copyInput.value = originalInput.value;
-            copyInput.className = "box-input";
-            copy.appendChild(copyInput);
-
-            container.appendChild(copy);
-            return copy;
-          }
 
           // Helper function to move matrix down
           function moveMatrixDown(matrixElements, distance = SIZE + GAP) {
@@ -2801,6 +2784,7 @@
                 createFloatingOperationSymbol(symbolX, symbolY, false, false);
 
                 tlInput.value = product1;
+                adjustBoxInput(tlInput);
                 topLeft.remove();
                 bottomRight.classList.remove("group-transition");
 
@@ -2835,6 +2819,7 @@
                     );
 
                     blInput.value = product2;
+                    adjustBoxInput(blInput);
                     topRight.remove();
                     bottomLeft.classList.remove("group-transition");
 
@@ -2842,6 +2827,7 @@
                     setTimeout(() => {
                       // Make product2 negative for subtraction
                       blInput.value = -product2;
+                      adjustBoxInput(blInput);
 
                       // Move bottomLeft (right block) to bottomRight (left block) position
                       bottomLeft.classList.add("group-transition");
@@ -2858,6 +2844,7 @@
                         const brInputFinal =
                           bottomRight.querySelector("input.box-input");
                         brInputFinal.value = result;
+                        adjustBoxInput(brInputFinal);
 
                         // Show addition symbol
                         const symbolX3 =
@@ -2922,7 +2909,8 @@
                               );
 
                               signedInput.value = finalResult;
-                              
+                              adjustBoxInput(signedInput);
+
                               bottomRight.classList.remove("group-transition");
                               bottomRight.remove();
 
@@ -2944,7 +2932,7 @@
           // Main determinant expansion function
           function expandDeterminant() {
             const { isRow, index } = findBestRowOrColumn();
-            console.log(`Expanding along ${isRow ? "row" : "column"} ${index}`);
+            //console.log(`Expanding along ${isRow ? "row" : "column"} ${index}`);
 
             let currentExpansionIndex = 0;
             const expansionElements = [];
@@ -3009,8 +2997,16 @@
             let signedElArray = [];
 
             function expandNextElement() {
+              /* if (is2x2) {
+                calculate2x2Determinant(
+                  minorCopies,
+                  signedElementCopy
+                )
+
+              } */
+
               if (currentExpansionIndex >= expansionElements.length) {
-                console.log("All expansions complete");
+                //console.log("All expansions complete");
                 // Reset all matrix opacity at the end
                 resetAllMatrixOpacity();
                 return;
@@ -3023,24 +3019,34 @@
               const sign = (row + col) % 2 === 0 ? 1 : -1;
 
               // Lower opacity for adjacent row and column (everything that wasn't copied)
-              lowerAdjacentOpacity(row, col);
+              
 
               // Create copy of the expansion element at original position first
-              const signedElementCopy = createCopyOfElement(
+              let signedElementCopy = createCopyOfElement(
                 element,
                 parseFloat(element.dataset.x),
                 parseFloat(element.dataset.y)
               );
               signedElArray.push(signedElementCopy);
 
+              
+              // Get minor matrix
+              let minorElements = [];
+              if (is2x2) {
+                let ghostBlock = document.createElement("div");
+                container.appendChild(ghostBlock);
+                minorElements = getMinorMatrix();
+              } else {
+                lowerAdjacentOpacity(row, col);
+                minorElements = getMinorMatrix(row, col);
+              }
+
               // Apply sign to the copy
               const signedInput =
                 signedElementCopy.querySelector("input.box-input");
               const originalValue = parseFloat(signedInput.value) || 0;
               signedInput.value = sign * originalValue;
-
-              // Get minor matrix
-              const minorElements = getMinorMatrix(row, col);
+              adjustBoxInput(signedInput);
 
               // Create copies of minor matrix elements at their original positions
               const minorCopies = [];
@@ -3104,7 +3110,7 @@
                             const expansionElsLast = expansionElements.length - 1;
                             if (
                               currentExpansionIndex <
-                              expansionElsLast
+                              expansionElsLast && !is2x2
                             ) {
                               resetAllMatrixOpacity();
                               moveMatrixRight(matrix);
@@ -3112,9 +3118,11 @@
                                 currentExpansionIndex++;
                                 expandNextElement();
                               }, 400 + 400*speedFactor);
+                            } else if (is2x2) {
+                              
                             } else {
                               resetAllMatrixOpacity();
-                              console.log("Determinant expansion complete");
+                              //console.log("Determinant expansion complete");
 
                               const lastEl = signedElArray[expansionElsLast];
                               let elcount = 0;
@@ -3213,6 +3221,7 @@
                                 if (elcount === expansionElsLast) {
                                   setTimeout(() => {
                                     detVals.value = elSum;
+                                    adjustBoxInput(detVals);
 
                                     // Show floating equals symbol next to the final result
                                     const symbolX = parseFloat(lastEl.dataset.x) + SIZE / 2;
@@ -3243,7 +3252,7 @@
                     }, 500 + 500 * speedFactor);
                   } else {
                     // For larger matrices, would need recursive expansion
-                    console.log("Larger matrix expansion not yet implemented");
+                    //console.log("Larger matrix expansion not yet implemented");
                     currentExpansionIndex++;
                     expandNextElement();
                   }
@@ -3259,6 +3268,462 @@
           expandDeterminant();
           saveHistory();
         });
+
+        function sleep(ms) {
+          return new Promise(resolve => setTimeout(resolve, ms + ms * speedFactor));
+        }
+
+        let stepMode = false; // Set to true to enable stepping
+        document.getElementById("step-toggle").addEventListener("click", () => {
+          stepMode = !stepMode;
+          //alert("Step mode " + (stepMode ? "enabled" : "disabled"));
+        });
+
+        function waitForSpace() {
+          if (!stepMode) {
+            // Step mode is OFF: auto-resolve immediately
+            return Promise.resolve();
+          }
+          // Step mode is ON: wait for space bar
+          return new Promise(resolve => {
+            function onKey(e) {
+              if (e.code === "Space") { //ArrowRight
+                e.preventDefault();
+                window.removeEventListener("keydown", onKey);
+                resolve();
+              }
+            }
+            window.addEventListener("keydown", onKey);
+          });
+        }
+
+        document.getElementById("rref-btn").addEventListener("click", async () => {
+          const selected = Array.from(container.querySelectorAll(".box.selected:not(.locked)"));
+          if (selected.length === 0) return;
+
+          const matrices = clusterBoxes(selected);
+          if (matrices.length !== 1) {
+            alert("Please select exactly 1 matrix for RREF");
+            return;
+          }
+
+          // Convert to grid and perform RREF
+          const grid = matrixToGrid(matrices[0]);
+          await performRREF(grid);
+          saveHistory();
+        });
+
+        function p(word) {
+          console.log(word);
+        }
+        // Add these helper functions for RREF
+
+        function getValue(element) {
+          const input = element.querySelector("input.box-input");
+          return parseFloat(input.value) || 0;
+        }
+
+        function setValue(element, value) {
+          const input = element.querySelector("input.box-input");
+          input.value = value.toString();
+          adjustBoxInput(input);
+        }
+
+        function findPivotRow(grid, startRow, col) {
+          for (let row = startRow; row < grid.length; row++) {
+            if (Math.abs(getValue(grid[row][col].el)) > 1e-10) { // Non-zero with tolerance
+              return row;
+            }
+          }
+          return -1; // No pivot found
+        }
+
+        
+
+        function lowerInterveningRowsOpacity(grid, sourceRow, targetRow) {
+          const start = Math.min(sourceRow, targetRow);
+          const end = Math.max(sourceRow, targetRow);
+
+          for (let row = start + 1; row < end; row++) {
+            grid[row].forEach(pos => {
+              pos.el.style.opacity = "0.3";
+            });
+          }
+        }
+
+        function resetAllOpacities(grid) {
+          grid.forEach(row => {
+            row.forEach(pos => {
+              pos.el.style.opacity = "1";
+            });
+          });
+        }
+
+        // Add the missing swapRows function
+        async function swapRows(grid, row1, row2) {
+          p('swapRows');
+
+          const row1Elements = grid[row1];
+          const row2Elements = grid[row2];
+
+          // Add transition classes
+          [...row1Elements, ...row2Elements].forEach(pos => {
+            pos.el.classList.add("group-transition");
+          });
+
+          await sleep(10); // Force reflow
+
+          // Swap positions
+          row1Elements.forEach((pos, i) => {
+            const row2Y = row2Elements[i].y;
+            pos.el.style.top = row2Y + "px";
+            pos.el.dataset.y = row2Y;
+            pos.y = row2Y; // Update the grid position
+          });
+
+          row2Elements.forEach((pos, i) => {
+            const row1Y = row1Elements[i].y;
+            pos.el.style.top = row1Y + "px";
+            pos.el.dataset.y = row1Y;
+            pos.y = row1Y; // Update the grid position
+          });
+
+          await sleep(300 + 300 * speedFactor);
+
+          // Remove transition classes
+          [...row1Elements, ...row2Elements].forEach(pos => {
+            pos.el.classList.remove("group-transition");
+          });
+
+          // Update grid references
+          [grid[row1], grid[row2]] = [grid[row2], grid[row1]];
+
+          await waitForSpace();
+        }
+
+        // Fix the moveInterveningRows function
+        async function moveInterveningRows(grid, sourceRow, targetRow) {
+          p('moveInterveningRows');
+
+          let canStep = false;
+          if (targetRow > sourceRow) {
+            // Move all rows below sourceRow (including targetRow and below) down
+            for (let row = sourceRow + 1; row < grid.length; row++) {
+              grid[row].forEach(pos => {
+                pos.el.classList.add("group-transition");
+                const newY = parseFloat(pos.el.dataset.y) + SIZEGAP;
+                pos.el.style.top = newY + "px";
+                pos.el.dataset.y = newY;
+                pos.y = newY;
+              });
+              canStep = true;
+            }
+          } else if (targetRow < sourceRow) {
+            // Move all rows above sourceRow (including targetRow and above) up
+            for (let row = 0; row < sourceRow; row++) {
+              grid[row].forEach(pos => {
+                pos.el.classList.add("group-transition");
+                const newY = parseFloat(pos.el.dataset.y) - SIZEGAP;
+                pos.el.style.top = newY + "px";
+                pos.el.dataset.y = newY;
+                pos.y = newY;
+              });
+              canStep = true;
+            }
+          }
+          await sleep(300 + 300 * speedFactor);
+
+          // Remove transition classes
+          for (let row = 0; row < grid.length; row++) {
+            grid[row].forEach(pos => pos.el.classList.remove("group-transition"));
+          }
+
+          if (canStep) await waitForSpace();
+        }
+
+        // Add function to move rows back up after operation
+        async function moveRowsBackUp(grid, sourceRow, targetRow) {
+          p('moveRowsBackUp');
+
+          if (targetRow > sourceRow) {
+            // Move all rows below sourceRow (including targetRow and below) UP
+            for (let row = sourceRow + 1; row < grid.length; row++) {
+              grid[row].forEach(pos => {
+                pos.el.classList.add("group-transition");
+                const newY = parseFloat(pos.el.dataset.y) - SIZEGAP;
+                pos.el.style.top = newY + "px";
+                pos.el.dataset.y = newY;
+                pos.y = newY;
+              });
+            }
+          } else if (targetRow < sourceRow) {
+            // Move all rows above sourceRow (including targetRow and above) DOWN
+            for (let row = 0; row < sourceRow; row++) {
+              grid[row].forEach(pos => {
+                pos.el.classList.add("group-transition");
+                const newY = parseFloat(pos.el.dataset.y) + SIZEGAP;
+                pos.el.style.top = newY + "px";
+                pos.el.dataset.y = newY;
+                pos.y = newY;
+              });
+            }
+          }
+          await sleep(300 + 300 * speedFactor);
+
+          // Remove transition classes
+          for (let row = 0; row < grid.length; row++) {
+            grid[row].forEach(pos => pos.el.classList.remove("group-transition"));
+          }
+
+          //await waitForSpace();
+        }
+
+        // Update the addRowMultiple function with correct logic
+        async function addRowMultiple(grid, sourceRow, targetRow, multiplier) {
+          console.log('addRowMultiple', sourceRow, targetRow);
+          // Create copies of source row
+          const sourceElements = grid[sourceRow];
+          const targetElements = grid[targetRow];
+          const copies = [];
+
+          let moveDown = 1;
+          if (targetRow < sourceRow) {
+            moveDown = -1;
+          }
+
+          await moveInterveningRows(grid, sourceRow, targetRow);
+
+          await sleep(100);
+
+          sourceElements.forEach(pos => {
+            //const copyY = parseFloat(pos.el.dataset.y) + moveDown * SIZEGAP;
+            const copy = createCopyOfElement(pos.el, parseFloat(pos.el.dataset.x), parseFloat(pos.el.dataset.y));
+            copies.push(copy);
+            copy.classList.add("group-transition");
+            pos.el.style.opacity = "0.3";
+          });
+
+          await sleep(10); // Brief pause to see the copies
+
+          copies.forEach(copy => {
+            yVal = parseFloat(copy.dataset.y) + moveDown * SIZEGAP;
+            copy.dataset.y = yVal;
+            copy.style.top = yVal + 'px';
+          });
+
+          await sleep(300);
+
+          // Scalar multiply the copies
+          if (Math.abs(multiplier - 1) > 1e-10) {
+            await scalarMultiplyRowElements(copies, multiplier);
+          }
+          // Reset opacities
+          resetAllOpacities(grid);
+
+          // Lower opacity of intervening rows
+          lowerInterveningRowsOpacity(grid, sourceRow, targetRow);
+
+          await sleep(300 + 300 * speedFactor);
+
+          // Move copies to target row and add
+          for (let i = 0; i < copies.length; i++) {
+            const copy = copies[i];
+            const target = targetElements[i].el;
+
+            copy.classList.add("group-transition");
+            copy.style.left = target.dataset.x + "px";
+            copy.style.top = target.dataset.y + "px";
+          }
+
+          await sleep(300 + 300 * speedFactor);
+
+          // Add values and show symbols
+          for (let i = 0; i < copies.length; i++) {
+            const copy = copies[i];
+            const target = targetElements[i].el;
+
+            // Add values
+            const copyValue = parseFloat(copy.querySelector("input.box-input").value) || 0;
+            const targetValue = parseFloat(target.querySelector("input.box-input").value) || 0;
+            targetInput = target.querySelector("input.box-input");
+            targetInput.value = (targetValue + copyValue).toString();
+            adjustBoxInput(targetInput);
+            
+            // Show addition symbol
+            const symbolX = parseFloat(target.dataset.x) + SIZE / 2;
+            const symbolY = parseFloat(target.dataset.y) + SIZE;
+            createFloatingOperationSymbol(symbolX, symbolY, true, true);
+
+            copy.remove();
+          }
+
+          // Reset opacities
+          resetAllOpacities(grid);
+
+          // Move rows back up to close the gap
+          await moveRowsBackUp(grid, sourceRow, targetRow);
+
+          await waitForSpace();
+        }
+
+        async function scalarMultiplyRowElements(elements, scalar) {
+          p('scalarMultiplyRowElements');
+
+          // Create scalar element for the copies
+          const firstElement = elements[0];
+          const scalarX = parseFloat(firstElement.dataset.x) - SIZEGAP * 2;
+          const scalarY = parseFloat(firstElement.dataset.y);
+
+          const scalarElement = createBox(scalarX, scalarY, scalar.toString());
+
+          // Remove any existing transition classes and set up for fade-in only
+          scalarElement.classList.remove("group-transition");
+          scalarElement.style.opacity = "0";
+          scalarElement.style.transition = "opacity 0.3s ease";
+
+          // Force reflow to ensure styles are applied
+          scalarElement.offsetHeight;
+
+          // Fade in scalar
+          scalarElement.style.opacity = "1";
+          await sleep(500 + 500 * speedFactor);
+
+          // Now set up for position animation
+          scalarElement.style.transition = "left 0.3s ease, top 0.3s ease";
+
+          // Force reflow again
+          scalarElement.offsetHeight;
+
+          // Move scalar to first element
+          scalarElement.style.left = (parseFloat(firstElement.dataset.x) - SIZE) + 'px';
+          await sleep(300 + 300 * speedFactor);
+
+          // Fade out and multiply all elements
+          scalarElement.style.transition = "opacity 0.3s ease";
+          scalarElement.style.opacity = "0";
+
+          elements.forEach(copy => {
+            const input = copy.querySelector("input.box-input");
+            const currentValue = parseFloat(input.value) || 0;
+            input.value = (currentValue * scalar).toString();
+            adjustBoxInput(input);
+
+            // Show multiplication symbol
+            const symbolX = parseFloat(copy.dataset.x) + SIZE / 2;
+            const symbolY = parseFloat(copy.dataset.y);
+            createFloatingOperationSymbol(symbolX, symbolY, false, false);
+          });
+
+          await sleep(600 + 600 * speedFactor);
+          scalarElement.remove();
+
+          await waitForSpace();
+        }
+
+        // Fix the scalarMultiplyRow function
+        async function scalarMultiplyRow(grid, rowIndex, scalar, pivotValue) {
+          p('scalarMultiplyRow');
+          
+          const rowElements = grid[rowIndex];
+
+          // Create scalar element
+          const firstElement = rowElements[0].el;
+          const scalarX = parseFloat(firstElement.dataset.x) - SIZEGAP * 2;
+          const scalarY = parseFloat(firstElement.dataset.y);
+
+          scalarString = scalar.toString();
+          let displayValue;
+          if (!isNaN(scalar) && scalarString.includes('.')) {
+            const decimalPlaces = scalarString.split('.')[1]?.length || 0;
+            if (decimalPlaces > 1) {
+              displayValue = "1/" + pivotValue.toString();
+            } else {
+              displayValue = scalar;
+            }
+          }
+          console.log('scalar:', displayValue);
+
+          const scalarElement = createBox(scalarX, scalarY, displayValue.toString());
+
+          // Remove any existing transition classes and set up for fade-in only
+          scalarElement.classList.remove("group-transition");
+          scalarElement.style.opacity = "0";
+          scalarElement.style.transition = "opacity 0.3s ease";
+
+          // Force reflow
+          scalarElement.offsetHeight;
+
+          // Fade in scalar
+          scalarElement.style.opacity = "1";
+          await sleep(300 + 300 * speedFactor);
+
+          // Set up for position animation
+          scalarElement.style.transition = "left 0.3s ease, top 0.3s ease";
+          scalarElement.offsetHeight;
+
+          // Move scalar to first element and combine
+          scalarElement.style.left = (parseFloat(firstElement.dataset.x) - SIZE) + "px";
+          await sleep(300 + 300 * speedFactor);
+
+          // Fade out and multiply all elements
+          scalarElement.style.transition = "opacity 0.3s ease";
+          scalarElement.style.opacity = "0";
+
+          rowElements.forEach(pos => {
+            const input = pos.el.querySelector("input.box-input");
+            const currentValue = parseFloat(input.value) || 0;
+            input.value = (currentValue * scalar).toString();
+            adjustBoxInput(input);
+
+            // Show multiplication symbol
+            const symbolX = parseFloat(pos.el.dataset.x) + SIZE / 2;
+            const symbolY = parseFloat(pos.el.dataset.y);
+            createFloatingOperationSymbol(symbolX, symbolY, false, false);
+          });
+
+          await sleep(300 + 300 * speedFactor);
+          scalarElement.remove();
+
+          await waitForSpace();
+        }
+
+        // Update the performRREF function to be complete
+        async function performRREF(grid) {
+          const rows = grid.length;
+          const cols = grid[0]?.length || 0;
+
+          let currentRow = 0;
+
+          for (let col = 0; col < cols && currentRow < rows; col++) {
+            // Find pivot
+            let pivotRow = findPivotRow(grid, currentRow, col);
+
+            if (pivotRow === -1) continue; // No pivot in this column
+
+            // Row swap if needed
+            if (pivotRow !== currentRow) {
+              await swapRows(grid, currentRow, pivotRow);
+            }
+
+            // Scale pivot row to make pivot = 1
+            const pivotValue = getValue(grid[currentRow][col].el);
+            if (Math.abs(pivotValue - 1) > 1e-10 && Math.abs(pivotValue) > 1e-10) {
+              await scalarMultiplyRow(grid, currentRow, 1 / pivotValue, pivotValue);
+            }
+
+            // Eliminate column entries above and below pivot
+            for (let row = 0; row < rows; row++) {
+              if (row !== currentRow) {
+                const multiplier = -getValue(grid[row][col].el);
+                if (Math.abs(multiplier) > 1e-10) {
+                  await addRowMultiple(grid, currentRow, row, multiplier);
+                }
+              }
+            }
+
+            currentRow++;
+          }
+        }
       });
     </script>
   </body>
