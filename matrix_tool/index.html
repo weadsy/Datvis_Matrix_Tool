@@ -197,6 +197,22 @@
         font-size: 0.875rem;
         pointer-events: none;
         z-index: 11;
+        width: 3rem;
+        text-align: center;
+      }
+
+      .matrix-name-input {
+        min-width: 3rem;
+        width: auto;
+        max-width: 12rem;
+        resize: none;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      /* Auto-sizing input technique */
+      .matrix-name-input::placeholder {
+        color: #9ca3af;
       }
 
       /* 1) give the tutorial window a border and rounded corners */
@@ -255,6 +271,46 @@
       /* EXPANDED: cap at 66% of viewport width */
       #tutorial.expanded {
         max-width: 66vw;
+      }
+
+      #matrix-menu {
+        border: 1px solid #888;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        transition: max-width 0.1s ease, max-height 0.1s ease, width 0.1s ease, height 0.1s ease;
+        min-width: 12rem;
+        max-width: 16rem;
+      }
+
+      #matrix-menu.ui-control:hover {
+        opacity: 1 !important;
+        pointer-events: all;
+      }
+
+      #matrix-menu.ui-control {
+        transition: opacity 0.4s ease-in-out;
+      }
+
+      /* Matrix button styling */
+      .matrix-button {
+        width: 100%;
+        text-align: left;
+        transition: background-color 0.2s ease;
+        font-size: 0.875rem;
+      }
+
+      .matrix-button:hover {
+        background-color: #4b5563 !important;
+      }
+
+      .matrix-delete-btn {
+        width: 1.5rem;
+        height: 1.5rem;
+        padding: 0;
+        margin-left: 0.5rem;
+        font-size: 0.75rem;
+        line-height: 1;
+        flex-shrink: 0;
       }
 
       .ui-control {
@@ -659,6 +715,20 @@
       </div>
     </div>
 
+    <!-- MATRIX MENU WINDOW -->
+    <div id="matrix-menu" class="ui-control absolute bottom-4 right-4 z-20">
+      <div id="matrix-menu-header"
+        class="flex justify-center items-center bg-gray-700 text-white px-3 py-2 rounded-t shadow">
+        <div class="font-bold text-lg">Matrices</div>
+      </div>
+    
+      <div id="matrix-menu-body" class="bg-gray-700 text-white rounded-b shadow overflow-auto max-h-60">
+        <div id="matrix-menu-content" class="p-3 space-y-2">
+          <p class="text-sm text-gray-300 text-center" id="no-matrices-msg">No saved matrices</p>
+        </div>
+      </div>
+    </div>
+
     <!--********************** JAVASCRIPT*****************************************************-->
     <script>
       // Catch all uncaught errors:
@@ -912,32 +982,6 @@
           setMatrixState(history[history.length - 1]);
         });
 
-        function repositionCountLabel() {
-          const lbl = container.querySelector(".sel-count-label");
-          if (!lbl) return;
-
-          const selectedEls = Array.from(
-            container.querySelectorAll(".box.selected")
-          );
-          if (!selectedEls.length) {
-            lbl.remove();
-            return;
-          }
-
-          const xs = selectedEls.map((el) => +el.dataset.x);
-          const ys = selectedEls.map((el) => +el.dataset.y);
-          const minX = Math.min(...xs);
-          const maxX = Math.max(...xs) + SIZE;
-          const minY = Math.min(...ys);
-
-          const labelX = minX + (maxX - minX) / 2;
-          const labelY = minY - 50;
-
-          lbl.style.left = `${labelX}px`;
-          lbl.style.top = `${labelY}px`;
-          lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
-        }
-
         function adjustBoxInput(input, defaultLength = 2) {
           const extra = Math.max(0, input.value.length - defaultLength);
           // Base width and font size
@@ -1107,7 +1151,7 @@
           return Object.values(groups);
         }
 
-        function renderClusterLabels() {
+        /* function renderClusterLabels() {
           // 1) clear old labels
           container
             .querySelectorAll(".sel-count-label")
@@ -1153,7 +1197,267 @@
 
             container.appendChild(lbl);
           });
+        } */
+       
+
+        // Object to store named matrices
+        let namedMatrices = {};
+
+        function renderClusterLabels() {
+          // 1) clear old labels
+          container
+            .querySelectorAll(".sel-count-label")
+            .forEach((lbl) => lbl.remove());
+
+          // 2) grab current selected boxes
+          const els = Array.from(container.querySelectorAll(".box.selected"));
+          if (!els.length) return;
+
+          const matrices = clusterBoxes(els);
+
+          // 5) for each group, append a label
+          matrices.forEach((cluster, index) => {
+            // compute bounding‐box of this cluster
+            const xs = cluster.map((el) => +el.dataset.x),
+              ys = cluster.map((el) => +el.dataset.y);
+            const minX = Math.min(...xs),
+              maxX = Math.max(...xs) + SIZE,
+              minY = Math.min(...ys);
+
+            const lbl = document.createElement("input");
+            lbl.className = [
+              "sel-count-label",
+              "matrix-name-input",
+              "bg-gray-700",
+              "text-white",
+              "px-2",
+              "py-1",
+              "rounded",
+              "shadow",
+              "pointer-events-auto",
+              "z-20",
+            ].join(" ");
+
+            lbl.type = "text";
+            lbl.placeholder = "Name matrix";
+            lbl.value = "";
+
+            // Auto-resize function
+            function autoResize() {
+              // Create a temporary span to measure text width
+              const temp = document.createElement("span");
+              temp.style.visibility = "hidden";
+              temp.style.position = "absolute";
+              temp.style.fontSize = getComputedStyle(lbl).fontSize;
+              temp.style.fontFamily = getComputedStyle(lbl).fontFamily;
+              temp.style.padding = "0 0.5rem"; // Account for padding
+              temp.textContent = lbl.value || lbl.placeholder;
+              document.body.appendChild(temp);
+
+              const width = Math.max(temp.offsetWidth + 16, 48); // min 3rem (48px)
+              lbl.style.width = Math.min(width, 192) + "px"; // max 12rem (192px)
+
+              document.body.removeChild(temp);
+            }
+
+            // Event listeners for auto-resize and saving
+            lbl.addEventListener("input", autoResize);
+            lbl.addEventListener("blur", () => {
+              if (lbl.value.trim()) {
+                saveNamedMatrix(lbl.value.trim(), cluster);
+              }
+            });
+            lbl.addEventListener("keydown", (e) => {
+              if (e.key === "Enter") {
+                lbl.blur(); // Trigger the save
+              }
+            });
+
+            // Initial resize
+            autoResize();
+
+            // position & cancel zoom
+            const labelX = minX + (maxX - minX) / 2;
+            const labelY = minY - 50;
+            lbl.style.left = `${labelX}px`;
+            lbl.style.top = `${labelY}px`;
+            lbl.style.transformOrigin = "center bottom";
+            lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
+
+            container.appendChild(lbl);
+          });
         }
+
+        function saveNamedMatrix(name, cluster) {
+          // Extract matrix data
+          const matrixData = cluster.map(el => ({
+            value: el.querySelector("input.box-input").value,
+            relativeX: parseFloat(el.dataset.x) - Math.min(...cluster.map(e => parseFloat(e.dataset.x))),
+            relativeY: parseFloat(el.dataset.y) - Math.min(...cluster.map(e => parseFloat(e.dataset.y)))
+          }));
+
+          namedMatrices[name] = {
+            data: matrixData,
+            timestamp: Date.now(),
+            size: cluster.length
+          };
+
+          console.log(`Matrix "${name}" saved with ${cluster.length} elements`);
+          updateMatrixMenu(); // This will now actually update the UI
+        }
+
+        function spawnNamedMatrix(name, x = null, y = null) {
+          if (!namedMatrices[name]) {
+            alert(`Matrix "${name}" not found`);
+            return;
+          }
+
+          const matrix = namedMatrices[name];
+
+          // If no coordinates provided, spawn near center of view
+          let baseX = x;
+          let baseY = y;
+
+          if (baseX === null || baseY === null) {
+            const containerRect = container.getBoundingClientRect();
+            baseX = (containerRect.width / 2) / zoomLevel;
+            baseY = (containerRect.height / 2) / zoomLevel;
+          }
+
+          // Clear current selection
+          clearSelection();
+
+          // Create boxes for the matrix
+          matrix.data.forEach(item => {
+            const newX = baseX + item.relativeX;
+            const newY = baseY + item.relativeY;
+            createBox(newX, newY, item.value);
+          });
+
+          console.log(`Matrix "${name}" spawned at (${baseX}, ${baseY})`);
+          saveHistory();
+        }
+
+        function listNamedMatrices() {
+          return Object.keys(namedMatrices).map(name => ({
+            name,
+            size: namedMatrices[name].size,
+            timestamp: namedMatrices[name].timestamp
+          }));
+        }
+
+        function deleteNamedMatrix(name) {
+          if (namedMatrices[name]) {
+            delete namedMatrices[name];
+            console.log(`Matrix "${name}" deleted`);
+            updateMatrixMenu();
+          }
+        }
+
+        // Placeholder for future matrix menu UI
+        function updateMatrixMenu() {
+          const menuContent = document.getElementById("matrix-menu-content");
+          const noMatricesMsg = document.getElementById("no-matrices-msg");
+
+          // Clear existing content
+          menuContent.innerHTML = "";
+
+          const matrixNames = Object.keys(namedMatrices);
+
+          if (matrixNames.length === 0) {
+            // Show "no matrices" message
+            const noMsg = document.createElement("p");
+            noMsg.className = "text-sm text-gray-300 text-center";
+            noMsg.id = "no-matrices-msg";
+            noMsg.textContent = "No saved matrices";
+            menuContent.appendChild(noMsg);
+          } else {
+            // Create buttons for each matrix
+            matrixNames.forEach(name => {
+              const matrix = namedMatrices[name];
+
+              // Container for button and delete
+              const buttonContainer = document.createElement("div");
+              buttonContainer.className = "flex items-center";
+
+              // Main matrix button
+              const button = document.createElement("button");
+              button.className = [
+                "matrix-button",
+                "bg-gray-600",
+                "text-white",
+                "px-2",
+                "py-1",
+                "rounded",
+                "shadow",
+                "hover:bg-gray-500",
+                "flex-1"
+              ].join(" ");
+
+              // Button text with matrix info
+              button.innerHTML = `
+                <div class="font-medium">${name}</div>
+                <div class="text-xs text-gray-300">${matrix.size} elements</div>
+              `;
+
+              // Click handler to spawn matrix
+              button.addEventListener("click", () => {
+                spawnNamedMatrix(name);
+              });
+
+              // Delete button
+              const deleteBtn = document.createElement("button");
+              deleteBtn.className = [
+                "matrix-delete-btn",
+                "bg-red-600",
+                "text-white",
+                "rounded",
+                "shadow",
+                "hover:bg-red-500",
+                "flex",
+                "items-center",
+                "justify-center"
+              ].join(" ");
+              deleteBtn.innerHTML = "×";
+              deleteBtn.title = `Delete ${name}`;
+
+              // Delete handler
+              deleteBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (confirm(`Delete matrix "${name}"?`)) {
+                  deleteNamedMatrix(name);
+                }
+              });
+
+              buttonContainer.appendChild(button);
+              buttonContainer.appendChild(deleteBtn);
+              menuContent.appendChild(buttonContainer);
+            });
+          }
+
+          console.log("Matrix menu updated:", matrixNames);
+        }
+
+        // Keyboard shortcut to spawn matrices
+        document.addEventListener("keydown", (e) => {
+          if (e.ctrlKey && e.key === "m") {
+            /* e.preventDefault();
+            const matrixNames = Object.keys(namedMatrices);
+            if (matrixNames.length === 0) {
+              alert("No named matrices available");
+              return;
+            }
+
+            const name = prompt(`Enter matrix name to spawn:\n\nAvailable: ${matrixNames.join(", ")}`);
+            if (name && namedMatrices[name]) {
+              spawnNamedMatrix(name);
+            } */
+           spawnNamedMatrix('re');
+          }
+        });
+
+        // Initialize matrix menu
+        updateMatrixMenu();
 
         function createFloatingOperationSymbol(
           x,
@@ -1530,10 +1834,6 @@
           setTimeout(() => {
             selected.forEach((el) => el.classList.remove("group-transition"));
           }, 300); // match the 0.3s in your CSS
-
-          // Remove any existing count‐labels
-          //container.querySelectorAll('.sel-count-label')
-          //        .forEach(lbl => lbl.remove());
 
           //clearSelection();
           renderClusterLabels();
