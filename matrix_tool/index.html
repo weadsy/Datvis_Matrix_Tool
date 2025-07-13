@@ -1270,13 +1270,7 @@
                   namedMatrices[matrixName] = defaultMatrices[matrixName];
                 }
               }); */
-              for (const [name, matrix] of Object.entries(defaultMatrices)) {
-                namedMatrices[name] = {
-                  data: arrayToMatrix(matrix.data),
-                  timestamp: Date.now(),
-                  size: matrix.size
-                };
-              }
+              
               
               //saveMatricesToCookies();
               updateMatrixMenu();
@@ -1286,6 +1280,14 @@
           } catch (error) {
             console.error("Error loading matrices from cookies:", error);
             namedMatrices = {}; // Reset to empty object on error
+          }
+
+          for (const [name, matrix] of Object.entries(defaultMatrices)) {
+                namedMatrices[name] = {
+                  data: arrayToMatrix(matrix.data),
+                  timestamp: Date.now(),
+                  size: matrix.size
+                };
           }
         }
 
