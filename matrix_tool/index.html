@@ -342,6 +342,14 @@
         animation: flash 1s ease-in-out infinite;
       }
 
+      .fade {
+        transition: opacity 0.6s;
+        opacity: 0;
+      }
+      .fade.in {
+        opacity: 1;
+      }
+
       #floating-tutorial {
         position: fixed;
         /* ...other styles... */
@@ -386,36 +394,39 @@
   >
     <!-- zoom controls -->
     <div class="ui-control absolute top-4 right-4 flex space-x-2 z-20">
-      <button id="rref-btn" class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600">
+      <button title="Inverse" id="inverse-btn" class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600">
+        A<sup>-1</sup>
+      </button>
+      <button title="RREF"  id="rref-btn" class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600">
         RREF
       </button>
       <button
-        id="det-btn"
+        id="det-btn"  title="Determinant" 
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
       >
-        Determ
+        | A |
       </button>
       <button
-        id="multiply-btn"
+        id="multiply-btn" title="Multiplication" 
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
       >
-        Multiply
+        A x B
       </button>
       <button
-        id="add-btn"
+        id="add-btn" title="Addition" 
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
       >
-        Addition
+        A + B
       </button>
       <button
-        id="tanspose-button"
+        id="tanspose-button" title="Transpose" 
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
       >
-        Transpose
+        A<sup>T</sup>
       </button>
 
       <button
-        id="group-btn"
+        id="group-btn" title="Sort blocks into matrix" 
         class="bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600"
       >
         Group
@@ -744,13 +755,17 @@
       };
 
       window.onunhandledrejection = function (event) {
-          alert(
-            `Unhandled Promise rejection:\n` +
-            `Reason: ${event.reason}\n`
-          );
-          // Optionally: return false to let it go to the console too
-          //return false;
-        };
+        alert(
+          `Unhandled Promise rejection:\n` +
+          `Reason: ${event.reason}\n`
+        );
+        // Optionally: return false to let it go to the console too
+        //return false;
+      };
+
+      function p(word) {
+        console.log(word);
+      }
 
       document.addEventListener("DOMContentLoaded", () => {
         // Landing overlay logic
@@ -1035,7 +1050,7 @@
         // 1) create boxes (blank)
         function defaultMatrix(
           matrixNum = 1,
-          numArray = [1, 2, 0, 1, 0, 3, 4, 1, 1]
+          numArray = [1, 2, 3, 0, 1, 4, 5, 6, 0]
         ) {
           xOffset = 4 * SIZEGAP * matrixNum;
           for (let i = 0; i < numArray.length; i++) {
@@ -1431,6 +1446,7 @@
 
           console.log(`Matrix "${name}" spawned at (${baseX}, ${baseY})`);
           saveHistory();
+          enableArrowNavigation();
         }
 
         function listNamedMatrices() {
@@ -2252,8 +2268,7 @@
           }
         });
 
-        function matrixToGrid(matrix) {
-          const tolerance = 10;
+        function matrixToGrid(matrix, tolerance = 10) {
           const positions = matrix.map((el) => ({
             el,
             x: parseFloat(el.dataset.x),
@@ -2639,8 +2654,6 @@
             container
               .querySelectorAll(".sel-count-label")
               .forEach((lbl) => lbl.remove());
-
-            
 
             // Helper function to reset opacity for a column
             function resetColumnOpacity(colIndex) {
@@ -3706,7 +3719,7 @@
         }
 
         document.getElementById("rref-btn").addEventListener("click", async () => {
-          const selected = Array.from(container.querySelectorAll(".box.selected:not(.locked)"));
+          /* const selected = Array.from(container.querySelectorAll(".box.selected:not(.locked)"));
           if (selected.length === 0) return;
 
           const matrices = clusterBoxes(selected);
@@ -3716,15 +3729,95 @@
           }
 
           // Convert to grid and perform RREF
-          const grid = matrixToGrid(matrices[0]);
+          const grid = matrixToGrid(matrices[0]); */
+          container
+            .querySelectorAll(".sel-count-label")
+            .forEach((lbl) => lbl.remove());
+
+          const grid = getSingleGrid().grid;
+          
           await performRREF(grid);
+
           saveHistory();
+          renderClusterLabels();
         });
 
-        function p(word) {
-          console.log(word);
-        }
-        // Add these helper functions for RREF
+        document.getElementById("inverse-btn").addEventListener("click", async () => {
+
+          const matrixObject = getSingleGrid();
+          if (!matrixObject) return;
+
+          let { grid, maxX, minY } = matrixObject;
+
+          if (grid.length !== grid[0].length) {
+            alert('Matrix has to be square');
+            return;
+          }
+
+          container
+            .querySelectorAll(".sel-count-label")
+            .forEach((lbl) => lbl.remove());
+
+          const rows = grid.length;
+          const cols = grid[0]?.length || 0;
+
+          // Position for the identity matrix (GAP to the right)
+          const identityX = maxX + SIZE + GAP + 40;
+          const identityY = minY;
+
+          // Create identity matrix data
+          const identityData = [];
+          for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+              const value = (i === j) ? 1 : 0; // 1 on diagonal, 0 elsewhere
+              identityData.push({
+                value: value,
+                relativeX: j * SIZEGAP,
+                relativeY: i * SIZEGAP
+              });
+            }
+          }
+
+          const identityBoxes = [];
+          // Create the identity matrix boxes
+          identityData.forEach(item => {
+            const newX = identityX + item.relativeX;
+            const newY = identityY + item.relativeY;
+            const box = createBox(newX, newY, item.value);
+            //box.classList.add('fade');
+            identityBoxes.push(box);
+            /* box.classList.add('fade');
+            setTimeout(() => box.classList.add('in'), 10); */
+            /* box.style.opacity = "0";
+            box.style.transition = "opacity 0.3s ease";
+            box.offsetHeight;
+
+            box.style.opacity = "1"; */
+          });
+          
+          await sleep(10);
+
+          identityBoxes.forEach(box => {
+            //box.offsetHeight;
+            box.classList.add('in');
+          });
+          await sleep(700 + 700 * speedFactor);
+
+          const NEW_TOLERANCE = 50;
+          const NEW_PROXIMITY = SIZE + 70;
+
+          grid2 = getSingleGrid(NEW_TOLERANCE, NEW_PROXIMITY).grid;
+
+          await performRREF(grid2);
+          saveHistory();
+          renderClusterLabels();
+
+          /* grid.forEach(box => {
+            box.el.style.transition = "opacity 0.3s ease";
+            box.el.style.opacity = "0";
+          }); */
+          
+        });
 
         function getValue(element) {
           const input = element.querySelector("input.box-input");
@@ -3745,8 +3838,6 @@
           }
           return -1; // No pivot found
         }
-
-        
 
         function lowerInterveningRowsOpacity(grid, sourceRow, targetRow) {
           const start = Math.min(sourceRow, targetRow);
@@ -4093,6 +4184,30 @@
           scalarElement.remove();
 
           await waitForSpace();
+        }
+
+        function getSingleGrid(tolerance = 10, proximity = SIZE + 20) {
+          const selected = Array.from(container.querySelectorAll(".box.selected:not(.locked)"));
+          if (selected.length === 0) {
+            alert("Please select a matrix");
+            return;
+          }
+
+          const matrices = clusterBoxes(selected, proximity);
+          if (matrices.length !== 1) {
+            alert("Please select exactly one matrix for identity matrix generation");
+            return;
+          }
+
+          const matrix = matrices[0];
+          //const grid = matrixToGrid(matrix);
+          const matrixObject = {
+            grid: matrixToGrid(matrix, tolerance),
+            maxX: Math.max(...matrix.map(el => parseFloat(el.dataset.x))),
+            minY: Math.min(...matrix.map(el => parseFloat(el.dataset.y)))
+          };
+
+          return matrixObject;
         }
 
         // Update the performRREF function to be complete
