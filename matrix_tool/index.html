@@ -2063,6 +2063,10 @@
           container
             .querySelectorAll(".box.selected")
             .forEach((el) => el.remove());
+
+          container
+            .querySelectorAll(".sel-count-label")
+            .forEach((lbl) => lbl.remove());
           // clear any selection state and count-label
           clearSelection();
           saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
