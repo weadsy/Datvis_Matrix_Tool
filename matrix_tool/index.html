@@ -300,7 +300,7 @@
       }
 
       .matrix-button:hover {
-        background-color: #4b5563 !important;
+        background-color: #586474 !important;
       }
 
       .matrix-delete-btn {
@@ -982,7 +982,34 @@
           setMatrixState(history[history.length - 1]);
         });
 
+        function clearMatrixIdFromCluster(changedBox) {
+          if (!changedBox.dataset.matrixId) return; // Already has no matrix ID
+
+          const matrixId = changedBox.dataset.matrixId;
+
+          // Find all boxes with the same matrix ID (same cluster)
+          const clusterBoxes = Array.from(container.querySelectorAll(`[data-matrix-id="${matrixId}"]`));
+
+          // Remove the matrix ID from all boxes in this cluster
+          clusterBoxes.forEach(box => {
+            delete box.dataset.matrixId;
+          });
+
+          console.log(`Matrix ID "${matrixId}" cleared from ${clusterBoxes.length} boxes due to value change`);
+
+          // Update the cluster labels to show blank names
+          renderClusterLabels();
+        }
+
         function adjustBoxInput(input, defaultLength = 2) {
+          // Clear matrix ID when value changes (only if this is a user edit, not programmatic)
+          if (!isRestoring) {
+            const box = input.closest('.box');
+            if (box && box.dataset.matrixId) {
+              clearMatrixIdFromCluster(box);
+            }
+          }
+
           const extra = Math.max(0, input.value.length - defaultLength);
           // Base width and font size
           let width = 50; // percent
@@ -993,7 +1020,7 @@
             let hasDec = input.value.includes('.');
             let hasNeg = (input.value.charAt(0) === '-');
             //if (input.value.charAt(0) === '-') isNeg = 3;
-            if (!hasDec && !hasNeg) { 
+            if (!hasDec && !hasNeg) {
               fontOffset = 0;
             }
             width += extra * (10 - fontOffset);
@@ -1151,57 +1178,101 @@
           return Object.values(groups);
         }
 
-        /* function renderClusterLabels() {
-          // 1) clear old labels
-          container
-            .querySelectorAll(".sel-count-label")
-            .forEach((lbl) => lbl.remove());
-
-          // 2) grab current selected boxes
-          const els = Array.from(container.querySelectorAll(".box.selected"));
-          if (!els.length) return;
-
-          const matrices = clusterBoxes(els);
-
-          // 5) for each group, append a label
-          matrices.forEach((cluster) => {
-            // compute bounding‐box of this cluster
-            const xs = cluster.map((el) => +el.dataset.x),
-              ys = cluster.map((el) => +el.dataset.y);
-            const minX = Math.min(...xs),
-              maxX = Math.max(...xs) + SIZE,
-              minY = Math.min(...ys);
-
-            const lbl = document.createElement("div");
-            lbl.className = [
-              "sel-count-label",
-              "bg-gray-700",
-              "text-white",
-              "px-2",
-              "py-1",
-              "rounded",
-              "shadow",
-              "pointer-events-none",
-              "z-20",
-            ].join(" ");
-
-            lbl.textContent = cluster.length * 1;
-
-            // position & cancel zoom
-            const labelX = minX + (maxX - minX) / 2;
-            const labelY = minY - 50;
-            lbl.style.left = `${labelX}px`;
-            lbl.style.top = `${labelY}px`;
-            lbl.style.transformOrigin = "center bottom";
-            lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
-
-            container.appendChild(lbl);
-          });
-        } */
-       
-
         // Object to store named matrices
         let namedMatrices = {};
+
+        function saveMatricesToCookies() {
+          try {
+            const matrixData = JSON.stringify(namedMatrices);
+            setCookie("savedMatrices", matrixData, 364); // Save for 7 days
+            console.log("Matrices saved to cookies");
+          } catch (error) {
+            console.error("Error saving matrices to cookies:", error);
+          }
+        }
+
+        const defaultMatrices = {
+          "Identity 3x3": {
+            data: [
+              [1, 0, 0],
+              [0, 1, 0],
+              [0, 0, 1]
+            ],
+            size: 9
+          },
+          "Zero 3x3": {
+            data: [
+              [0, 0, 0],
+              [0, 0, 0],
+              [0, 0, 0]
+            ],
+            size: 9
+          },
+          "Identity 2x2": {
+            data: [
+              [1, 0],
+              [0, 1]
+            ],
+            size: 4
+          },
+          "Zero 2x2": {
+            data: [
+              [0, 0],
+              [0, 0]
+            ],
+            size: 4
+          },
+        };
+
+        function arrayToMatrix(arr) {
+          let data = [];
+          for (let i = 0; i < arr.length; i++) {
+            for (let j = 0; j < arr[i].length; j++) {
+              data.push({
+                value: arr[i][j],
+                relativeX: j * SIZEGAP,
+                relativeY: i * SIZEGAP
+              });
+            }
+          }
+
+          return data;
+        }
+
+
+        function loadMatricesFromCookies() {
+          try {
+            const matrixData = getCookie("savedMatrices");
+            if (matrixData) {
+              namedMatrices = JSON.parse(matrixData);
+              console.log("Matrices loaded from cookies:", Object.keys(namedMatrices));
+
+              //defaultMatrices = createDefaultMatrices();
+
+              // Iterate through default matrices and add them if they don't exist
+              /* Object.keys(defaultMatrices).forEach((matrixName) => {
+                if (!namedMatrices[matrixName]) {
+                  namedMatrices[matrixName] = defaultMatrices[matrixName];
+                }
+              }); */
+              for (const [name, matrix] of Object.entries(defaultMatrices)) {
+                namedMatrices[name] = {
+                  data: arrayToMatrix(matrix.data),
+                  timestamp: Date.now(),
+                  size: matrix.size
+                };
+              }
+              
+              //saveMatricesToCookies();
+              updateMatrixMenu();
+            } else {
+              console.log("No saved matrices found in cookies");
+            }
+          } catch (error) {
+            console.error("Error loading matrices from cookies:", error);
+            namedMatrices = {}; // Reset to empty object on error
+          }
+        }
 
         function renderClusterLabels() {
           // 1) clear old labels
@@ -1240,7 +1311,10 @@
 
             lbl.type = "text";
             lbl.placeholder = "Name matrix";
-            lbl.value = "";
+
+            // Check if this cluster already has a name by looking at the first element's data-matrix-id
+            const existingMatrixId = cluster[0].dataset.matrixId;
+            lbl.value = existingMatrixId || "";
 
             // Auto-resize function
             function autoResize() {
@@ -1265,6 +1339,11 @@
             lbl.addEventListener("blur", () => {
               if (lbl.value.trim()) {
                 saveNamedMatrix(lbl.value.trim(), cluster);
+              } else if (existingMatrixId) {
+                // If they cleared the name, remove the matrix ID from all blocks
+                removeMatrixId(cluster);
+                // Also remove from matrices and cookies
+                deleteNamedMatrix(existingMatrixId);
               }
             });
             lbl.addEventListener("keydown", (e) => {
@@ -1296,6 +1375,11 @@
             relativeY: parseFloat(el.dataset.y) - Math.min(...cluster.map(e => parseFloat(e.dataset.y)))
           }));
 
+          // Add the matrix ID to each block in the cluster
+          cluster.forEach(el => {
+            el.dataset.matrixId = name;
+          });
+
           namedMatrices[name] = {
             data: matrixData,
             timestamp: Date.now(),
@@ -1303,7 +1387,17 @@
           };
 
           console.log(`Matrix "${name}" saved with ${cluster.length} elements`);
-          updateMatrixMenu(); // This will now actually update the UI
+
+          // Save to cookies whenever a matrix is saved
+          saveMatricesToCookies();
+          updateMatrixMenu();
+        }
+
+        function removeMatrixId(cluster) {
+          // Remove the matrix ID from all blocks in the cluster
+          cluster.forEach(el => {
+            delete el.dataset.matrixId;
+          });
         }
 
         function spawnNamedMatrix(name, x = null, y = null) {
@@ -1327,11 +1421,12 @@
           // Clear current selection
           clearSelection();
 
-          // Create boxes for the matrix
+          // Create boxes for the matrix and assign them the matrix ID
           matrix.data.forEach(item => {
             const newX = baseX + item.relativeX;
             const newY = baseY + item.relativeY;
-            createBox(newX, newY, item.value);
+            const newBox = createBox(newX, newY, item.value);
+            newBox.dataset.matrixId = name; // Assign the matrix ID to the spawned box
           });
 
           console.log(`Matrix "${name}" spawned at (${baseX}, ${baseY})`);
@@ -1348,8 +1443,16 @@
 
         function deleteNamedMatrix(name) {
           if (namedMatrices[name]) {
+            // Remove the matrix ID from all blocks that have this name
+            container.querySelectorAll(`[data-matrix-id="${name}"]`).forEach(el => {
+              delete el.dataset.matrixId;
+            });
+
             delete namedMatrices[name];
             console.log(`Matrix "${name}" deleted`);
+
+            // Update cookies whenever a matrix is deleted
+            saveMatricesToCookies();
             updateMatrixMenu();
           }
         }
@@ -1424,14 +1527,16 @@
               // Delete handler
               deleteBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
-                if (confirm(`Delete matrix "${name}"?`)) {
+                /* if (confirm(`Delete matrix "${name}"?`)) {
                   deleteNamedMatrix(name);
-                }
+                } */
+               deleteNamedMatrix(name);
               });
 
               buttonContainer.appendChild(button);
               buttonContainer.appendChild(deleteBtn);
-              menuContent.appendChild(buttonContainer);
+              menuContent.prepend(buttonContainer);
+              //menuContent.appendChild(buttonContainer);
             });
           }
 
@@ -1457,6 +1562,7 @@
         });
 
         // Initialize matrix menu
+        loadMatricesFromCookies();
         updateMatrixMenu();
 
         function createFloatingOperationSymbol(
@@ -2018,10 +2124,12 @@
           "wheel",
           function (e) {
             const updatedTut = document.getElementById("tutorial");
+            const matrixMenu = document.getElementById("matrix-menu");
             //console.log(updatedTut.classList.contains("visible"));
             if (
               updatedTut.classList.contains("expanded") &&
-              updatedTut.matches(".ui-control:hover")
+              updatedTut.matches(".ui-control:hover") ||
+              matrixMenu.matches(".ui-control:hover")
             )
               return;
             // Prevent default scrolling
