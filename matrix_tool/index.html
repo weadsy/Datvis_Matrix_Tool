@@ -9,6 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- interact.js v1 -->
     <script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.11/dist/interact.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
     <style>
       /* floating animation */
       @keyframes float {
@@ -120,7 +121,7 @@
         height: 3.2rem;
         width: 50%; /* adjust to taste */
         background: transparent;
-        border: 1px solid #88f;
+        border: 2px solid #88f;
         border-radius: 4px;
         border-width: 2px;
         color: white;
@@ -132,8 +133,41 @@
 
       /* hide the border and block pointer-events when disabled */
       .box-input.disabled {
-        border: 1px solid #888;
+        border: 2px solid #888;
         pointer-events: none !important;
+      }
+
+      .matrix-arrow-btn {
+        position: absolute;
+        /* background: rgba(55, 65, 81, 0.9); */
+        border: 2px solid #6b7280;
+        border-radius: 50%;
+        width: 1.5rem;
+        height: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: pointer;
+        pointer-events: auto;
+        z-index: 15;
+        transition: all 0.2s ease;
+      }
+
+      .matrix-arrow-btn:hover {
+        background: rgba(55, 65, 81, 1);
+        border-color: #9ca3af;
+        transform: scale(1.1);
+      }
+
+      .matrix-arrow-btn svg {
+        width: 1rem;
+        height: 1rem;
+      }
+
+      /* Hide arrow buttons when edit mode is disabled */
+      .matrix-arrow-btn.hidden {
+        display: none;
       }
 
       .floating {
@@ -342,6 +376,19 @@
         animation: flash 1s ease-in-out infinite;
       }
 
+      @keyframes border-flash {
+        0%, 100% {
+          border-color: #888; /* original border color */
+        }
+        50% {
+          border-color: #84dcdc; /* flash color, e.g., yellow */
+        }
+      }
+
+      .box-input.flash-border {
+        animation: border-flash 1s ease-in-out infinite;
+      }
+
       .fade {
         transition: opacity 0.6s;
         opacity: 0;
@@ -500,7 +547,7 @@
         class="flex items-center bg-gray-700 text-white px-3 py-1 rounded shadow hover:bg-gray-600 cursor-pointer"
       >
         <input type="checkbox" id="edit-labels" class="mr-2 checked" />
-        Edit Labels
+        Edit Matrix
       </label>
     </div>
 
@@ -698,7 +745,7 @@
         display: none;
       "
     >
-      <div id="floating-tutorial-text" class="text-sm leading-snug break-words">
+      <div id="floating-tutorial-text" class="text-lg leading-snug break-words">
         <!-- Tutorial text goes here -->
       </div>
       <button
@@ -795,11 +842,21 @@
 
         localStorage.setItem("isReset", "false");
 
+        const floatingTutorialSeen = getCookie("floatingTutorialSeen");
+
         // Scale tool button - hide overlay and save preference
         continueBtn.addEventListener("click", function () {
           landingOverlay.classList.add("hidden");
 
           onLandingPage = false;
+          //await sleep(100);
+
+          if (!floatingTutorialSeen) {
+            disableEdits();
+            showTutorialStep(tutorialStep);
+          }
+
+          //document.addEventListener("click", drawLineFromClick);
         });
 
         // Matrix tool button (placeholder for now)
@@ -817,67 +874,54 @@
         );
 
         const tutorialSteps = [
-          {
-            text: "Click a number to change its value. Switch squares using arrow keys.",
-            x: 346,
-            y: 71,
-          },
-          {
-            text: "Click and drag to create a selection rectangle around the matrix.",
-            x: 274,
-            y: 103,
-          },
-          {
-            text: "Click the Transpose button to transpose rows and columns.",
-            x: 970,
-            y: 83,
-          },
-          {
-            text: "Click copy to copy selected matrix",
-            x: 140,
-            y: 71,
-          },
-          {
-            text: "Drag the new matrix to the right",
-            x: 587,
-            y: 99,
-          },
-          {
-            text: "Make a new selection to capture both matrices",
-            x: 328,
-            y: 91,
-          },
-          {
-            text: "Click addition button to perform matrix addition",
-            x: 955,
-            y: 75,
-          },
-          {
-            text: "Make another copy and select all the squares",
-            x: 638,
-            y: 109,
-          },
-          {
-            text: "Click Group to group all selected squares into 1 matrix",
-            x: 955,
-            y: 75,
-          },
-          {
-            text: "Zoom with mousewheel or slider bar",
-            x: 950,
-            y: 242,
-          },
+          { text: "Choose one of the default matrix options", x: 1125, y: 462 },
+          { text: "Zoom out with mouse wheel or slider", x: 1295, y: 168 },
+          { text: "Click and drag to make a selection around the matrix", x: 940, y: 190 },
+          { text: "The matrix is now selected, try dragging it to the center of the screen", x: 913, y: 225 },
+          { text: "Turn on 'Edit Matrix'",  x: 343, y: 78 },
+          { text: "Select a matrix entry to edit. Navigate entries using arrow keys on your keyboard", x: 945, y: 162, },
+          { text: "Use arrow buttons on the bottom and right to add or remove columns/rows", x: 945, y: 162, },
+          
+          
+          { text: "Give the matrix a name to save it in cookies", x: 913, y: 225  },
+          { text: "Now that the matrix is selected we can do matrix operations", x: 1219, y: 87  },
+          { text: "Click the Transpose button (A<sup>T</sup>) ", x: 1219, y: 87  },
+          { text: "Click copy button to make a copy of the selected matrix (or spawn saved)", x: 220, y: 97  },
+          { text: "Drag the copied matrix to the right of the original", x: 1250, y: 210  },
+          { text: "Make another rectangle selection containing both matrices", x: 1250, y: 210 },
+          { text: "Click the matrix addition button (A + B)", x: 1219, y: 87  },
+          { text: "Adjust the speed of the animation to make operations slower or faster", x: 670, y: 519  },
+          { text: "Click the undo button to undo the previous operation", x: 165, y: 112  },
+          { text: "The delete button will delete any selected blocks", x: 165, y: 112  },
+          { text: "Try out the rest of the matrix operation buttons", x: 1219, y: 87  }
         ];
 
         let tutorialStep = 0;
 
         function showTutorialStep(step) {
           const s = tutorialSteps[step];
-          floatingTutorialText.textContent = s.text;
+
+          // Clear previous Typed.js instance if needed
+          if (window.currentTyped) {
+            window.currentTyped.destroy();
+          }
+          floatingTutorialText.textContent = "";
           floatingTutorial.style.display = "flex";
+
           if (typeof s.x === "number" && typeof s.y === "number") {
             floatingTutorial.style.left = s.x + "px";
             floatingTutorial.style.top = s.y + "px";
+          }
+
+          window.currentTyped = new Typed('#floating-tutorial-text', {
+            strings: [s.text],
+            typeSpeed: 10,
+            showCursor: false
+          });
+
+          if (step == tutorialSteps.length - 1) {
+            floatingTutorialNext.textContent = 'Done';
+            setCookie("floatingTutorialSeen", true, 14);
           }
         }
 
@@ -890,7 +934,33 @@
           }
         });
 
-        //showTutorialStep(tutorialStep);
+        function drawLineFromClick(e) {
+          const x = e.clientX;
+          const y = e.clientY;
+          const coordText = `x: ${x}, y: ${y}`;
+          console.log(coordText);
+          //console.log("x: %d, y: %d", x, y);
+
+          navigator.clipboard.writeText(coordText);
+
+          // Remove any previous line
+          const oldLine = document.getElementById("floating-tutorial-line");
+          if (oldLine) oldLine.remove();
+
+          // Create the line
+          const line = document.createElement("div");
+          line.id = "floating-tutorial-line";
+          line.style.position = "fixed";
+          line.style.left = x + "px";
+          line.style.top = y + "px";
+          line.style.width = "15rem"; // 15rem = 240px if root font-size is 16px
+          line.style.height = "3px";
+          line.style.background = "yellow";
+          line.style.zIndex = "9999";
+          line.style.pointerEvents = "none";
+
+          document.body.appendChild(line);
+        }
 
         // how close to the edge (in px) before we show UI:
         const SHOW_MARGIN = 100;
@@ -898,13 +968,14 @@
         const editCheckBox = document.getElementById("edit-labels");
         editCheckBox.checked = true;
 
-        const cb = document.getElementById("edit-labels");
+        //const cb = document.getElementById("edit-labels");
         const label = document.getElementById("edit-labels-label");
 
         label.classList.toggle("flash");
-        cb.addEventListener("change", () => {
+
+        editCheckBox.addEventListener("change", () => {
           // if checked, add the flash class to the label; otherwise remove it
-          label.classList.toggle("flash", cb.checked);
+          label.classList.toggle("flash", editCheckBox.checked);
         });
 
         // grab all your controls:
@@ -929,7 +1000,7 @@
             x < MARGIN || x > w - MARGIN || y < MARGIN || y > h - MARGIN;
 
           uiControls.forEach((el) => {
-            if (editCheckBox.checked) {
+            if (editCheckBox.checked || !floatingTutorialSeen) {
               el.classList.add("visible");
             } else {
               el.classList.toggle("visible", nearEdge);
@@ -981,6 +1052,7 @@
           });
           isRestoring = false;
           renderClusterLabels();
+          updateArrowButtons();
         }
 
         // Call this after every user action that changes the matrix
@@ -1084,6 +1156,7 @@
             input.addEventListener("change", () => adjustBoxInput(input));
             
             box.appendChild(input);
+            
             box.classList.add("selected");
             // random float phase
             //box.style.animationDelay = `-${Math.random()*3}s`;
@@ -1091,11 +1164,15 @@
           }
         }
         //defaultMatrix();
-        defaultMatrix(1);
+        if (floatingTutorialSeen)
+          defaultMatrix(1);
+
         saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
+        renderClusterLabels();
 
         // helper: create a new box at (x,y) and hook up dragging
         let indx = COUNT;
+
         function createBox(x, y, value) {
           const box = document.createElement("div");
           box.className = [
@@ -1120,13 +1197,16 @@
           input.addEventListener("change", saveHistory); //SAVE MATRIX HISTORY FOR UNDO*****************
           input.addEventListener("change", () => adjustBoxInput(input));
 
-          if (!document.getElementById("edit-labels").checked) {
+          if (!editCheckBox.checked) {
             input.classList.add("disabled");
           }
           box.appendChild(input);
 
           container.appendChild(box);
-          box.classList.add("selected");
+
+          if (floatingTutorialSeen || (!floatingTutorialSeen && tutorialStep > 1))
+            box.classList.add("selected");
+
           if (value) {
             input.value = value;
           } else {
@@ -1162,6 +1242,8 @@
           container
             .querySelectorAll(".box.inSelection")
             .forEach((el) => el.classList.remove("inSelection"));
+        
+          removeArrowButtons();
         }
 
         function clusterBoxes(boxes, proximity = SIZE + 20) {
@@ -1286,11 +1368,11 @@
           }
 
           for (const [name, matrix] of Object.entries(defaultMatrices)) {
-                namedMatrices[name] = {
-                  data: arrayToMatrix(matrix.data),
-                  timestamp: Date.now(),
-                  size: matrix.size
-                };
+            namedMatrices[name] = {
+              data: arrayToMatrix(matrix.data),
+              timestamp: Date.now(),
+              size: matrix.size
+            };
           }
         }
 
@@ -1737,6 +1819,8 @@
           if (selectedEls.length) {
             renderClusterLabels();
           }
+
+          updateArrowButtons();
         }
 
         // 3) draggable + group‐drag (unchanged)
@@ -1846,6 +1930,8 @@
             //groupDrag = true;
           },
           onmove(event) {
+            disableEdits();
+
             const dx = event.dx / zoomLevel,
               dy = event.dy / zoomLevel;
             delta.x += dx;
@@ -1886,6 +1972,11 @@
             // we already set transformOrigin to 'center bottom' when we created it
             lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
           });
+
+          /* container.querySelectorAll(".matrix-arrow-btn").forEach((lbl) => {
+            // we already set transformOrigin to 'center bottom' when we created it
+            lbl.style.transform = `translateX(-50%) scale(${1 / zoomLevel})`;
+          }); */
         }
 
         // initialize on load
@@ -2092,10 +2183,14 @@
         });
 
         // --- cookie helpers ---
-        function setCookie(name, val, days) {
+        function setCookie(name, val, days, seconds) {
           const d = new Date();
-          //d.setTime(d.getTime() + days * 1000);
-          d.setTime(d.getTime() + (days || 365) * 24 * 60 * 60 * 1000);
+          if (days) {
+            d.setTime(d.getTime() + (days || 365) * 24 * 60 * 60 * 1000);
+          } else {
+            d.setTime(d.getTime() + seconds * 1000);
+          }
+          
           document.cookie =
             name +
             "=" +
@@ -2259,23 +2354,271 @@
         // Call this after boxes are created and when edit mode changes
         enableArrowNavigation();
 
-        // grab the checkbox and all the box-inputs
-        const toggleEdit = document.getElementById("edit-labels"); // your checkbox
+        // Helper function to find the matrix that contains selected boxes
+        function findMatrixFromSelection() {
+          const selected = Array.from(container.querySelectorAll(".box.selected"));
+          if (selected.length === 0) return null;
 
+          // Use existing matrixToGrid function to structure the matrix
+          const grid = matrixToGrid(selected);
+          return grid.length > 0 ? grid : null;
+        }
+
+        // Helper function to spawn new row/column
+        function spawnRowOrColumn(direction, grid) {
+          if (!grid || grid.length === 0) return;
+
+          const SIZE = 96;
+          const GAP = 16;
+
+          switch (direction) {
+            case 'down':
+              // Spawn new row below the matrix
+              const bottomRow = grid[grid.length - 1];
+              const newRowYBottom = bottomRow[0].y + (SIZE + GAP);
+
+              for (let i = 0; i < bottomRow.length; i++) {
+                const newX = bottomRow[i].x;
+                createBox(newX, newRowYBottom, '0');
+              }
+              break;
+
+            case 'right':
+              // Spawn new column to the right of the matrix
+              const rightmostX = Math.max(...grid.flat().map(item => item.x));
+              const newColXRight = rightmostX + (SIZE + GAP);
+
+              for (let i = 0; i < grid.length; i++) {
+                const newY = grid[i][grid[i].length - 1].y;
+                createBox(newColXRight, newY, '0');
+              }
+              break;
+
+            case 'remove-row':
+              // Remove bottom row (only if more than 1 row exists)
+              if (grid.length > 1) {
+                const bottomRow = grid[grid.length - 1];
+                bottomRow.forEach(item => {
+                  // Remove the actual DOM element
+                  if (item.el && item.el.parentNode) {
+                    item.el.remove();
+                  }
+                });
+              }
+              break;
+
+            case 'remove-column':
+              // Remove rightmost column (only if more than 1 column exists)
+              const maxCols = Math.max(...grid.map(row => row.length));
+              if (maxCols > 1) {
+                grid.forEach(row => {
+                  // Remove the rightmost element in each row
+                  const rightmostItem = row[row.length - 1];
+                  if (rightmostItem && rightmostItem.el && rightmostItem.el.parentNode) {
+                    rightmostItem.el.remove();
+                  }
+                });
+              }
+              break;
+          }
+
+          // Re-enable arrow navigation for newly created boxes
+          setTimeout(() => {
+            enableArrowNavigation();
+          }, 50);
+        }
+
+        // Function to create and position arrow buttons around a matrix
+        function createArrowButtons(grid) {
+          if (!grid || grid.length === 0) return;
+
+          const SIZE = 96;
+          const GAP = 16;
+          const BUTTON_SIZE = 24*1.5; // Smaller buttons since we have more of them
+
+          // Calculate matrix bounds
+          const allItems = grid.flat();
+          const minX = Math.min(...allItems.map(item => item.x));
+          const maxX = Math.max(...allItems.map(item => item.x)) + SIZE;
+          const minY = Math.min(...allItems.map(item => item.y));
+          const maxY = Math.max(...allItems.map(item => item.y)) + SIZE;
+
+          const centerX = (minX + maxX) / 2;
+          const centerY = (minY + maxY) / 2;
+
+          // Check if we can remove rows/columns (need at least 2 to remove 1)
+          const canRemoveRow = grid.length > 1;
+          const canRemoveColumn = Math.max(...grid.map(row => row.length)) > 1;
+
+          // Create buttons for each direction
+          const buttons = [
+            // Bottom buttons: Add row (down arrow) and Remove row (up arrow)
+            {
+              title: 'Add row',
+              direction: 'down',
+              x: centerX - BUTTON_SIZE - 5,
+              y: maxY + SIZE / 3,
+              svg: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 5.25 7.5 7.5 7.5-7.5m-15 6 7.5 7.5 7.5-7.5" />
+</svg>
+`
+            },
+            {
+              title: canRemoveRow ? 'Remove row' : 'Cannot remove (min 1 row)',
+              direction: 'remove-row',
+              x: centerX + 5,
+              y: maxY + SIZE / 3,
+              disabled: !canRemoveRow,
+              svg: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 18.75 7.5-7.5 7.5 7.5" />
+  <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 7.5-7.5 7.5 7.5" />
+</svg>
+`
+            },
+            // Right buttons: Add column (right arrow) and Remove column (left arrow)
+            {
+              title: 'Add column',
+              direction: 'right',
+              x: maxX + SIZE / 3,
+              y: centerY - BUTTON_SIZE - 5,
+              svg: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5" />
+</svg>
+`
+            },
+            {
+              title: canRemoveColumn ? 'Remove column' : 'Cannot remove (min 1 column)',
+              direction: 'remove-column',
+              x: maxX + SIZE / 3,
+              y: centerY + 5,
+              disabled: !canRemoveColumn,
+              svg: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5" />
+</svg>
+`
+            }
+          ];
+
+          buttons.forEach(btnData => {
+            const btn = document.createElement('button');
+            btn.className = 'matrix-arrow-btn';
+            btn.title = btnData.title;
+            btn.style.left = `${btnData.x}px`;
+            btn.style.top = `${btnData.y}px`;
+            btn.innerHTML = btnData.svg;
+
+            // Scale button with zoom level
+            btn.style.transform = `scale(${1 / zoomLevel})`;
+            btn.style.transformOrigin = 'center';
+
+            // Style disabled buttons differently
+            if (btnData.disabled) {
+              btn.style.opacity = '0.5';
+              btn.style.cursor = 'not-allowed';
+              btn.style.borderColor = '#4b5563';
+            }
+
+            // Add click handler
+            btn.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+
+              // Don't do anything if button is disabled
+              if (btnData.disabled) return;
+
+              // Save state before making changes
+              saveHistory();
+
+              // Perform the action
+              spawnRowOrColumn(btnData.direction, grid);
+
+              // Update buttons and re-render
+              updateArrowButtons();
+              setTimeout(() => {
+                renderClusterLabels();
+              }, 100);
+            });
+
+            container.appendChild(btn);
+          });
+        }
+
+        // Function to remove all arrow buttons
+        function removeArrowButtons() {
+          container.querySelectorAll('.matrix-arrow-btn').forEach(btn => btn.remove());
+        }
+
+        // Function to update arrow button visibility based on edit mode and selection
+        function updateArrowButtons() {
+          const selected = Array.from(container.querySelectorAll(".box.selected"));
+          if (selected.length === 0) return;
+
+          const matrices = clusterBoxes(selected);
+          
+          // Use existing matrixToGrid function to structure the matrix
+          const grid = matrixToGrid(selected);
+
+          // Always remove existing buttons first
+          removeArrowButtons();
+
+          // Only create new buttons if edit mode is enabled and there's a selected matrix
+          if (editCheckBox && grid && matrices.length == 1) {
+            createArrowButtons(grid);
+          }
+        }
+
+        // grab the checkbox and all the box-inputs
+        //const toggleEdit = document.getElementById("edit-labels"); // your checkbox
+
+        if (floatingTutorialSeen)
+          updateArrowButtons();
         //toggleEdit.dispatchEvent(new Event("change"));
         // when the checkbox changes…
-        toggleEdit.addEventListener("change", () => {
+        editCheckBox.addEventListener("change", () => {
           const boxInputs = document.querySelectorAll(".box-input");
-          const disable = !toggleEdit.checked; // disable when *not* checked
+          const disable = !editCheckBox.checked; // disable when *not* checked
           boxInputs.forEach((input) => {
             input.classList.toggle("disabled", disable);
+            input.classList.toggle("flash-border", !disable);
           });
 
           // Re-enable navigation for newly enabled inputs
-          if (toggleEdit.checked) {
+          if (editCheckBox.checked) {
             enableArrowNavigation();
           }
+
+          updateArrowButtons();
         });
+
+        const operationButtons = [
+          "inverse-btn",
+          "rref-btn",
+          "det-btn",
+          "multiply-btn",
+          "add-btn",
+          "tanspose-button",
+          "group-btn"
+        ];
+
+        operationButtons.forEach(id => {
+          const btn = document.getElementById(id);
+          if (btn) {
+            btn.addEventListener("click", disableEdits);
+          }
+        });
+
+        function disableEdits() {
+          editCheckBox.checked = false;
+
+          const boxInputs = document.querySelectorAll(".box-input");
+          boxInputs.forEach((input) => {
+            input.classList.add("disabled");
+            input.classList.remove("flash-border");
+          });
+
+          label.classList.remove("flash");
+          removeArrowButtons();
+        }
 
         function matrixToGrid(matrix, tolerance = 10) {
           const positions = matrix.map((el) => ({
