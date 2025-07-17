@@ -734,6 +734,22 @@
       </div>
     </div>
 
+    <div class="landing-overlay" id="landingOverlay2">
+      <div class="landing-content">
+        <h1>New User? Try The Tutorial</h1>
+        <p>
+          It seems like you haven't visited the site in a while
+          or this is your first visit. Would you like to try the tutorial?
+        </p>
+        <div class="landing-buttons">
+          <button class="landing-button primary" id="YES_Btn">
+            YES
+          </button>
+          <button class="landing-button" id="NO_Btn">NO</button>
+        </div>
+      </div>
+    </div>
+
     <div
       id="floating-tutorial"
       class="fixed z-50 inline-flex flex-col items-start bg-gray-600 bg-opacity-90 text-white px-2 py-1 rounded-lg shadow-lg border border-gray-400"
@@ -822,6 +838,11 @@
         const landingOverlay = document.getElementById("landingOverlay");
         const continueBtn = document.getElementById("continueBtn");
         const scaleToolBtn = document.getElementById("scaleToolBtn");
+
+        const tutorialOverlay = document.getElementById("landingOverlay2");
+        const YES_Btn = document.getElementById("YES_Btn");
+        const NO_Btn = document.getElementById("NO_Btn");
+
         let onLandingPage = true;
 
         document.getElementById("reset-btn").addEventListener("click", () => {
@@ -844,6 +865,7 @@
 
         const floatingTutorialSeen = getCookie("floatingTutorialSeen");
 
+        tutorialOverlay.classList.add("hidden");
         // Scale tool button - hide overlay and save preference
         continueBtn.addEventListener("click", function () {
           landingOverlay.classList.add("hidden");
@@ -852,12 +874,26 @@
           //await sleep(100);
 
           if (!floatingTutorialSeen) {
-            disableEdits();
-            showTutorialStep(tutorialStep);
+            tutorialOverlay.classList.remove("hidden");
           }
 
           //document.addEventListener("click", drawLineFromClick);
         });
+
+        YES_Btn.addEventListener("click", function () {
+          tutorialOverlay.classList.add("hidden");
+
+          disableEdits();
+          showTutorialStep(tutorialStep);
+        });
+
+        NO_Btn.addEventListener("click", function () {
+          setCookie("floatingTutorialSeen", true, 14);
+          localStorage.setItem("isReset", "true");
+          window.location.reload();
+          //tutorialOverlay.classList.add("hidden");
+        });
+
 
         // Matrix tool button (placeholder for now)
         scaleToolBtn.addEventListener("click", function () {
@@ -977,6 +1013,19 @@
           // if checked, add the flash class to the label; otherwise remove it
           label.classList.toggle("flash", editCheckBox.checked);
         });
+
+        function disableEdits() {
+          editCheckBox.checked = false;
+
+          const boxInputs = document.querySelectorAll(".box-input");
+          boxInputs.forEach((input) => {
+            input.classList.add("disabled");
+            input.classList.remove("flash-border");
+          });
+
+          label.classList.remove("flash");
+          removeArrowButtons();
+        }
 
         // grab all your controls:
         const uiControls = document.querySelectorAll(".ui-control");
@@ -1821,6 +1870,7 @@
           }
 
           updateArrowButtons();
+          //p(editCheckBox);
         }
 
         // 3) draggable + group‐drag (unchanged)
@@ -2562,7 +2612,7 @@
           removeArrowButtons();
 
           // Only create new buttons if edit mode is enabled and there's a selected matrix
-          if (editCheckBox && grid && matrices.length == 1) {
+          if (editCheckBox.checked && grid && matrices.length == 1) {
             createArrowButtons(grid);
           }
         }
@@ -2607,18 +2657,7 @@
           }
         });
 
-        function disableEdits() {
-          editCheckBox.checked = false;
-
-          const boxInputs = document.querySelectorAll(".box-input");
-          boxInputs.forEach((input) => {
-            input.classList.add("disabled");
-            input.classList.remove("flash-border");
-          });
-
-          label.classList.remove("flash");
-          removeArrowButtons();
-        }
+        
 
         function matrixToGrid(matrix, tolerance = 10) {
           const positions = matrix.map((el) => ({
