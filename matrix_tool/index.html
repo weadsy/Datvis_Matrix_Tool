@@ -909,7 +909,7 @@
           "floating-tutorial-next"
         );
 
-        const tutorialSteps = [
+        /* const tutorialSteps = [
           { text: "Choose one of the default matrix options", x: 1125, y: 462 },
           { text: "Zoom out with mouse wheel or slider", x: 1295, y: 168 },
           { text: "Click and drag to make a selection around the matrix", x: 940, y: 190 },
@@ -917,8 +917,6 @@
           { text: "Turn on 'Edit Matrix'",  x: 343, y: 78 },
           { text: "Select a matrix entry to edit. Navigate entries using arrow keys on your keyboard", x: 945, y: 162, },
           { text: "Use arrow buttons on the bottom and right to add or remove columns/rows", x: 945, y: 162, },
-          
-          
           { text: "Give the matrix a name to save it in cookies", x: 913, y: 225  },
           { text: "Now that the matrix is selected we can do matrix operations", x: 1219, y: 87  },
           { text: "Click the Transpose button (A<sup>T</sup>) ", x: 1219, y: 87  },
@@ -930,6 +928,26 @@
           { text: "Click the undo button to undo the previous operation", x: 165, y: 112  },
           { text: "The delete button will delete any selected blocks", x: 165, y: 112  },
           { text: "Try out the rest of the matrix operation buttons", x: 1219, y: 87  }
+        ]; */
+        const tutorialSteps = [
+          { text: "Choose one of the default matrix options", x: 0.60, y: 0.55 },
+          { text: "Zoom out with mouse wheel or slider", x: 0.69, y: 0.20 },
+          { text: "Click and drag to make a selection around the matrix", x: 0.50, y: 0.23 },
+          { text: "The matrix is now selected, try dragging it to the center of the screen", x: 0.48, y: 0.27 },
+          { text: "Turn on 'Edit Matrix'", x: 0.18, y: 0.09 },
+          { text: "Select a matrix entry to edit. Navigate entries using arrow keys on your keyboard", x: 0.50, y: 0.19 },
+          { text: "Use arrow buttons on the bottom and right to add or remove columns/rows", x: 0.50, y: 0.19 },
+          { text: "Give the matrix a name to save it in cookies", x: 0.48, y: 0.27 },
+          { text: "Now that the matrix is selected we can do matrix operations", x: 0.64, y: 0.10 },
+          { text: "Click the Transpose button (A<sup>T</sup>) ", x: 0.64, y: 0.10 },
+          { text: "Click copy button to make a copy of the selected matrix (or spawn saved)", x: 0.12, y: 0.12 },
+          { text: "Drag the copied matrix to the right of the original", x: 0.66, y: 0.25 },
+          { text: "Make another rectangle selection containing both matrices", x: 0.66, y: 0.25 },
+          { text: "Click the matrix addition button (A + B)", x: 0.64, y: 0.10 },
+          { text: "Adjust the speed of the animation to make operations slower or faster", x: 0.35, y: 0.62 },
+          { text: "Click the undo button to undo the previous operation", x: 0.09, y: 0.15 },
+          { text: "The delete button will delete any selected blocks", x: 0.09, y: 0.15 },
+          { text: "Try out the rest of the matrix operation buttons", x: 0.64, y: 0.10 }
         ];
 
         let tutorialStep = 0;
@@ -945,8 +963,9 @@
           floatingTutorial.style.display = "flex";
 
           if (typeof s.x === "number" && typeof s.y === "number") {
-            floatingTutorial.style.left = s.x + "px";
-            floatingTutorial.style.top = s.y + "px";
+            const containerRect = container.getBoundingClientRect();
+            floatingTutorial.style.left = (containerRect.left + containerRect.width * s.x) + "px";
+            floatingTutorial.style.top = (containerRect.top + containerRect.height * s.y) + "px";
           }
 
           window.currentTyped = new Typed('#floating-tutorial-text', {
