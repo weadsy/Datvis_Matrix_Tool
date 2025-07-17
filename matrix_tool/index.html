@@ -397,6 +397,11 @@
         opacity: 1;
       }
 
+      .editing {
+        font-style: italic;
+        border-color: #84dcdc;
+      }
+
       #floating-tutorial {
         position: fixed;
         /* ...other styles... */
@@ -1234,6 +1239,7 @@
         //defaultMatrix();
         if (floatingTutorialSeen)
           defaultMatrix(1);
+        defaultMatrix(2, [2]);
 
         saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
         renderClusterLabels();
@@ -1294,6 +1300,12 @@
           selDiv = null,
           selStart = { x: 0, y: 0 };
 
+        function clearLabels() {
+          container
+            .querySelectorAll(".sel-count-label")
+            .forEach((el) => el.remove());
+        }
+
         function clearSelection() {
           // only un-select boxes that aren't locked
           container.querySelectorAll(".box.selected").forEach((el) => {
@@ -1301,9 +1313,7 @@
               el.classList.remove("selected");
 
               // remove any old count‐labels
-              container
-                .querySelectorAll(".sel-count-label")
-                .forEach((el) => el.remove());
+              clearLabels();
             }
           });
           // 1) clear any prior inSelection flags
@@ -1446,9 +1456,7 @@
 
         function renderClusterLabels() {
           // 1) clear old labels
-          container
-            .querySelectorAll(".sel-count-label")
-            .forEach((lbl) => lbl.remove());
+          clearLabels();
 
           // 2) grab current selected boxes
           const els = Array.from(container.querySelectorAll(".box.selected"));
@@ -2206,9 +2214,7 @@
 
           // clear old selection, then paste copies
           clearSelection();
-          container
-            .querySelectorAll(".sel-count-label")
-            .forEach((lbl) => lbl.remove());
+          clearLabels();
           //repositionCountLabel();
 
           deltas.forEach((delta) => {
@@ -2224,9 +2230,7 @@
             .querySelectorAll(".box.selected")
             .forEach((el) => el.remove());
 
-          container
-            .querySelectorAll(".sel-count-label")
-            .forEach((lbl) => lbl.remove());
+          clearLabels();
           // clear any selection state and count-label
           clearSelection();
           saveHistory(); //SAVE MATRIX HISTORY FOR UNDO*****************
@@ -2639,8 +2643,10 @@
         // grab the checkbox and all the box-inputs
         //const toggleEdit = document.getElementById("edit-labels"); // your checkbox
 
-        if (floatingTutorialSeen)
+        if (floatingTutorialSeen) {
           updateArrowButtons();
+          //input.classList.toggle("editing", disable);
+        }
         //toggleEdit.dispatchEvent(new Event("change"));
         // when the checkbox changes…
         editCheckBox.addEventListener("change", () => {
@@ -2648,7 +2654,9 @@
           const disable = !editCheckBox.checked; // disable when *not* checked
           boxInputs.forEach((input) => {
             input.classList.toggle("disabled", disable);
-            input.classList.toggle("flash-border", !disable);
+            //input.classList.toggle("flash-border", !disable);
+            //input.style.fontStyle = "italic";
+            //input.classList.toggle("editing", disable);
           });
 
           // Re-enable navigation for newly enabled inputs
@@ -2790,9 +2798,8 @@
             // 9) NEW: Animate transpose column by column with space-making
             const COLUMN_DELAY = 500; // 500ms delay between each column
 
-            container
-              .querySelectorAll(".sel-count-label")
-              .forEach((lbl) => lbl.remove());
+            clearLabels();
+
             for (let col = 0; col < maxCols; col++) {
               setTimeout(() => {
                 // FIRST: Move all remaining elements down to make space
@@ -2892,9 +2899,7 @@
           }
 
           // Remove count labels during animation
-          container
-            .querySelectorAll(".sel-count-label")
-            .forEach((lbl) => lbl.remove());
+          clearLabels();
 
           // Create a flat array of pairs for sequential animation
           const pairs = [];
@@ -3018,6 +3023,54 @@
           return copy;
         }
 
+        async function scalarMultiplyMatrix(grid,  targetX, targetY, scalar, sign = 1) {
+          clearLabels();
+
+          const scalarElement = scalar;
+          scalar = parseFloat(scalar.querySelector("input.box-input").value);
+          // Remove any existing transition classes and set up for fade-in only
+          scalarElement.classList.add("group-transition");
+
+          // Force reflow
+          scalarElement.offsetHeight;
+
+          // Move scalar to first element and combine
+          scalarElement.style.left = targetX + "px";
+          scalarElement.style.top = targetY + "px";
+
+          await sleep(500 + 500 * speedFactor);
+
+          scalarElement.style.left = (targetX + sign * SIZEGAP) + "px";
+
+          await sleep(300 + 300 * speedFactor);
+
+          // Fade out and multiply all elements
+          scalarElement.style.transition = "opacity 0.3s ease";
+          scalarElement.style.opacity = "0";
+
+          grid.forEach(colElements => {
+            colElements.forEach(pos => {
+              const input = pos.el.querySelector("input.box-input");
+              const currentValue = parseFloat(input.value) || 0;
+              input.value = (currentValue * scalar).toString();
+              adjustBoxInput(input);
+
+              // Show multiplication symbol
+              const symbolX = parseFloat(pos.el.dataset.x) + SIZE / 2;
+              const symbolY = parseFloat(pos.el.dataset.y);
+              createFloatingOperationSymbol(symbolX, symbolY, false, false);
+            });
+          });
+          
+
+          await sleep(300 + 300 * speedFactor);
+          scalarElement.remove();
+
+          renderClusterLabels();
+          saveHistory();
+          //await waitForSpace();
+        }
+
         document
           .getElementById("multiply-btn")
           .addEventListener("click", () => {
@@ -3053,6 +3106,33 @@
             const rightRows = rightGrid.length;
             const rightCols = rightGrid[0]?.length || 0;
 
+            let leftDim = leftRows * leftCols;
+            let rightDim = rightRows * rightCols;
+
+            if (leftDim == 1) {
+              let rightTop = rightGrid[0][0].el;
+              let rightBottom = rightGrid[rightRows - 1][0].el;
+              let matrixHeight = (rightBottom.dataset.y - rightTop.dataset.y) / 2;
+
+              let targetX = rightTop.dataset.x - SIZEGAP * 2;
+              let targetY = parseFloat(rightTop.dataset.y) + matrixHeight;
+
+              scalarMultiplyMatrix(rightGrid, targetX, targetY, leftGrid[0][0].el);
+            
+              return;
+
+            } else if (rightDim == 1) {
+              let leftTop = leftGrid[0][leftCols - 1].el;
+              let leftBottom = leftGrid[leftRows - 1][0].el;
+              let matrixHeight = (leftBottom.dataset.y - leftTop.dataset.y) / 2;
+
+              let targetX = parseFloat(leftTop.dataset.x) + SIZEGAP * 2;
+              let targetY = parseFloat(leftTop.dataset.y) + matrixHeight;
+              console.log(targetX, targetY);
+              scalarMultiplyMatrix(leftGrid, targetX, targetY, rightGrid[0][0].el, -1);
+              return;
+            }
+
             if (leftCols !== rightRows) {
               alert(
                 `Cannot multiply matrices: left matrix has ${leftCols} columns but right matrix has ${rightRows} rows`
@@ -3061,9 +3141,7 @@
             }
 
             // Remove count labels during animation
-            container
-              .querySelectorAll(".sel-count-label")
-              .forEach((lbl) => lbl.remove());
+            clearLabels();
 
             // Helper function to reset opacity for a column
             function resetColumnOpacity(colIndex) {
@@ -3417,9 +3495,7 @@
           }
 
           // Remove count labels during animation
-          container
-            .querySelectorAll(".sel-count-label")
-            .forEach((lbl) => lbl.remove());
+          clearLabels();
 
           // Helper function to move matrix down
           function moveMatrixDown(matrixElements, distance = SIZE + GAP) {
@@ -4140,9 +4216,7 @@
 
           // Convert to grid and perform RREF
           const grid = matrixToGrid(matrices[0]); */
-          container
-            .querySelectorAll(".sel-count-label")
-            .forEach((lbl) => lbl.remove());
+          clearLabels();
 
           const grid = getSingleGrid().grid;
           
@@ -4164,9 +4238,7 @@
             return;
           }
 
-          container
-            .querySelectorAll(".sel-count-label")
-            .forEach((lbl) => lbl.remove());
+          clearLabels();
 
           const rows = grid.length;
           const cols = grid[0]?.length || 0;
