@@ -1,0 +1,455 @@
+/* floating animation */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+/* Overlay styles */
+.landing-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px);
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+/* Content box styles */
+.landing-content {
+    background-color: #1f2937;
+    /* Dark background to match theme */
+    color: white;
+    padding: 2.5rem;
+    border-radius: 0.75rem;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    border: 1px solid #374151;
+}
+
+.landing-content h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.landing-content p {
+    margin-bottom: 1.5rem;
+    color: #d1d5db;
+}
+
+.landing-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.landing-button {
+    background-color: #374151;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.landing-button:hover {
+    background-color: #4b5563;
+}
+
+.landing-button.primary {
+    background-color: #3b82f6;
+}
+
+.landing-button.primary:hover {
+    background-color: #2563eb;
+}
+
+/* Hide overlay when dismissed */
+.landing-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* make each box a flex‐container centered both ways */
+.box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* style the label and prevent it from catching pointer events */
+.box-label {
+    pointer-events: none;
+    user-select: none;
+    color: white;
+    font-size: 3rem;
+}
+
+/* style the inner input to sit in the center */
+.box-input {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 3.2rem;
+    width: 50%;
+    /* adjust to taste */
+    background: transparent;
+    border: 2px solid #88f;
+    border-radius: 4px;
+    border-width: 2px;
+    color: white;
+    text-align: center;
+    font-size: 2rem;
+    outline: none;
+    pointer-events: auto;
+    /* so you can type in it */
+}
+
+/* hide the border and block pointer-events when disabled */
+.box-input.disabled {
+    border: 2px solid #888;
+    pointer-events: none !important;
+}
+
+.matrix-arrow-btn {
+    position: absolute;
+    /* background: rgba(55, 65, 81, 0.9); */
+    border: 2px solid #6b7280;
+    border-radius: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 15;
+    transition: all 0.2s ease;
+}
+
+.matrix-arrow-btn:hover {
+    background: rgba(55, 65, 81, 1);
+    border-color: #9ca3af;
+    transform: scale(1.1);
+}
+
+.matrix-arrow-btn svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Hide arrow buttons when edit mode is disabled */
+.matrix-arrow-btn.hidden {
+    display: none;
+}
+
+.floating {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* .box {
+            transition: left 0.3s ease, top 0.3s ease;
+        } */
+/* only boxes with this class will animate their left/top */
+.group-transition {
+    transition: left 0.3s ease, top 0.3s ease;
+}
+
+.transpose-transition {
+    transition: left 1s ease, top 1s ease;
+}
+
+/* scale only the inner container */
+#container {
+    transform-origin: top left;
+    /*transition: transform 0.2s ease-out;*/
+    /* animate transform, width and height over 300ms with ease-in-out */
+    transition: transform 0.05s ease-in-out, width 0.05s ease-in-out,
+        height 0.05s ease-in-out;
+    padding-top: 10rem;
+}
+
+/* highlight selected boxes */
+.box.selected {
+    outline: 2px solid #88f;
+    outline-offset: 2px;
+}
+
+/* highlight locked boxes */
+.box.locked {
+    outline: 2px solid rgb(255, 3, 74);
+    outline-offset: 2px;
+}
+
+/* selection rectangle */
+.select-rect {
+    position: absolute;
+    border: 1px dashed white;
+    background-color: rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.box.locked.inSelection {
+    outline: 2px dashed rgb(255, 3, 74);
+    outline-offset: 2px;
+}
+
+.sel-count-label {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    pointer-events: none;
+    z-index: 11;
+    width: 3rem;
+    text-align: center;
+}
+
+.matrix-name-input {
+    min-width: 3rem;
+    width: auto;
+    max-width: 12rem;
+    resize: none;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* Auto-sizing input technique */
+.matrix-name-input::placeholder {
+    color: #9ca3af;
+}
+
+/* 1) give the tutorial window a border and rounded corners */
+#tutorial {
+    border: 1px solid #888;
+    /* or whatever color */
+    border-radius: 0.5rem;
+    /* match your header/body rounding */
+    overflow: hidden;
+    /* clip child corners */
+    /* 2) animate size changes */
+    transition: max-width 0.1s ease, max-height 0.1s ease, width 0.1s ease,
+        height 0.1s ease;
+}
+
+/* anywhere in your stylesheet */
+#tutorial.ui-control:hover {
+    opacity: 1 !important;
+    pointer-events: all;
+    /* so you can still interact with it */
+}
+
+#tutorial.ui-control {
+    /* this selector is more specific than #tutorial, so it wins */
+    transition: opacity 0.4s ease-in-out;
+}
+
+/* hide full text by default */
+#tutorial-content-full {
+    display: none;
+}
+
+/* COLLAPSED: show only the “min” content */
+#tutorial.collapsed #tutorial-content-min {
+    display: block;
+}
+
+#tutorial.collapsed #tutorial-content-full {
+    display: none;
+}
+
+/* EXPANDED: show only the “full” content */
+#tutorial.expanded #tutorial-content-min {
+    display: none;
+}
+
+#tutorial.expanded #tutorial-content-full {
+    display: block;
+}
+
+/* limit the body to 50% of the viewport, and let it scroll */
+#tutorial.expanded #tutorial-body {
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+/* COLLAPSED: stays whatever its auto-width is */
+#tutorial.collapsed {
+    max-width: 13rem;
+}
+
+/* EXPANDED: cap at 66% of viewport width */
+#tutorial.expanded {
+    max-width: 66vw;
+}
+
+#matrix-menu {
+    border: 1px solid #888;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: max-width 0.1s ease, max-height 0.1s ease, width 0.1s ease, height 0.1s ease;
+    min-width: 12rem;
+    max-width: 16rem;
+}
+
+#matrix-menu.ui-control:hover {
+    opacity: 1 !important;
+    pointer-events: all;
+}
+
+#matrix-menu.ui-control {
+    transition: opacity 0.4s ease-in-out;
+}
+
+/* Matrix button styling */
+.matrix-button {
+    width: 100%;
+    text-align: left;
+    transition: background-color 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.matrix-button:hover {
+    background-color: #586474 !important;
+}
+
+.matrix-delete-btn {
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.ui-control {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease-in-out;
+}
+
+.ui-control.visible {
+    opacity: 1;
+    pointer-events: all;
+    transition-delay: 0s;
+}
+
+.ui-control:not(.visible) {
+    transition-delay: 0s;
+}
+
+@keyframes flash {
+
+    0%,
+    100% {
+        background-color: #374151;
+    }
+
+    /* normal color */
+    50% {
+        background-color: #526f9e;
+    }
+
+    /* flash color */
+}
+
+.flash {
+    animation: flash 1s ease-in-out infinite;
+}
+
+@keyframes border-flash {
+
+    0%,
+    100% {
+        border-color: #888;
+        /* original border color */
+    }
+
+    50% {
+        border-color: #84dcdc;
+        /* flash color, e.g., yellow */
+    }
+}
+
+.box-input.flash-border {
+    animation: border-flash 1s ease-in-out infinite;
+}
+
+.fade {
+    transition: opacity 0.6s;
+    opacity: 0;
+}
+
+.fade.in {
+    opacity: 1;
+}
+
+.editing {
+    font-style: italic;
+    border-color: #84dcdc;
+}
+
+#floating-tutorial {
+    position: fixed;
+    /* ...other styles... */
+    min-width: 0 !important;
+    max-width: 22rem;
+    width: auto;
+    /* Make the label a positioning context for the button */
+    position: fixed;
+}
+
+#floating-tutorial {
+    position: fixed;
+}
+
+#floating-tutorial-next {
+    position: absolute;
+    right: -0.1rem;
+    bottom: -0.1rem;
+    transform: translate(50%, 50%);
+}
+
+/* disable selection everywhere */
+body {
+    -webkit-user-select: none;
+    /* Chrome/Safari */
+    -moz-user-select: none;
+    /* Firefox */
+    -ms-user-select: none;
+    /* IE10+ */
+    user-select: none;
+    /* Standard */
+}
+
+/* but allow selecting/caret in inputs, textareas, etc. */
+input,
+textarea,
+select {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
