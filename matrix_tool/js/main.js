@@ -90,6 +90,14 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = "/scale_tool/";
     });
 
+    const isLocal = location.hostname === "127.0.0.1";
+    //console.log('t',location.hostname);
+    const reactAppUrl = isLocal ? "http://localhost:5173" : "/react/";
+
+    neuralNetBtn.addEventListener("click", function () {
+        window.location.href = reactAppUrl;
+    });
+
     // Floating tutorial logic
     const floatingTutorial = document.getElementById("floating-tutorial");
     const floatingTutorialText = document.getElementById(
