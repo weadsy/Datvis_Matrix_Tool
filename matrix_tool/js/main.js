@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const isLocal = location.hostname === "127.0.0.1";
     //console.log('t',location.hostname);
-    const reactAppUrl = isLocal ? "http://localhost:5173" : "/react/";
+    const reactAppUrl = isLocal ? "http://localhost:5173" : "/neural_net_builder/";
 
     neuralNetBtn.addEventListener("click", function () {
         window.location.href = reactAppUrl;
