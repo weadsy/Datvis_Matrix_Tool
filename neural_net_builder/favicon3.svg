@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<svg width="500" height="500" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <!-- Created with SVG-edit - https://github.com/SVG-Edit/svgedit-->
+ <defs>
+  <marker id="mkr_start_svg_11" markerHeight="5" markerUnits="strokeWidth" markerWidth="5" orient="auto" refX="50" refY="50" se_type="leftarrow" viewBox="0 0 100 100">
+   <path d="m0,50l100,40l-30,-40l30,-40z" fill="#ffffff" stroke="#ffffff" stroke-width="10"/>
+  </marker>
+  <marker id="mkr_start_svg_5" markerHeight="5" markerUnits="strokeWidth" markerWidth="5" orient="auto" refX="50" refY="50" se_type="leftarrow" viewBox="0 0 100 100">
+   <path d="m0,50l100,40l-30,-40l30,-40z" fill="#ffffff" stroke="#ffffff" stroke-width="10"/>
+  </marker>
+  <marker id="mkr_start_svg_6" markerHeight="5" markerUnits="strokeWidth" markerWidth="5" orient="auto" refX="50" refY="50" se_type="leftarrow" viewBox="0 0 100 100">
+   <path d="m0,50l100,40l-30,-40l30,-40z" fill="#ffffff" stroke="#ffffff" stroke-width="10"/>
+  </marker>
+ </defs>
+ <g class="layer">
+  <title>Layer 1</title>
+  <ellipse cx="386.6" cy="90.1" fill="#000000" id="svg_8" rx="50" ry="50" stroke="#ffffff" stroke-width="10" transform="matrix(1 0 0 1 13 -20)"/>
+  <ellipse cx="66.2" cy="261.7" fill="#000000" id="svg_4" rx="50" ry="50" stroke="#ffffff" stroke-width="10" transform="matrix(1 0 0 1 13 -20)"/>
+  <polyline fill="none" id="svg_11" marker-start="url(#mkr_start_svg_11)" points="335.20001220703125,107.5999984741211 232.1999969482422,164.60000610351562 129.1999969482422,221.60000610351562" stroke="#ffffff" stroke-width="8"/>
+  <ellipse cx="340.38" cy="209.26" fill="#000000" id="svg_6" marker-start="url(#mkr_start_svg_6)" rx="50" ry="50" stroke="#ffffff" stroke-width="10" transform="matrix(1 0 0 1 0 0) matrix(0.545898 0.837852 -0.837852 0.545898 375.773 35.2405) matrix(1 0 0 1 -9.66036 -21.81)"/>
+  <polyline fill="none" id="svg_5" marker-start="url(#mkr_start_svg_5)" points="335.9227600097656,375.508056640625 231.93771362304688,320.3255310058594 127.95269012451172,265.1429748535156" stroke="#ffffff" stroke-width="8"/>
+ </g>
+</svg>
